@@ -2,17 +2,19 @@ package vmlang.compiler
 
 import scala.util.parsing.combinator.syntactical._
 import vmlang.compiler.ast._
+import collection.immutable.HashMap
 
-object Something extends StandardTokenParsers {
-	
-	lexical.delimiters ++= List("(",")")
-	
-	def someRule = repsep(ident,",")
-	
-	def apply(in:String) = phrase(someRule)(new lexical.Scanner(in))
-	
-}
+import java.util.Scanner
 
 object Test extends Application {
-	println(Parser("a = 2-2"))
+  val s = new Scanner(System.in)
+  print("> ")
+  while(s.hasNext) {
+    try {
+      println(Parser(s.nextLine))
+    } catch {
+      case e:IllegalArgumentException => println(e.getMessage)
+    }
+    print("> ")
+  }
 }
