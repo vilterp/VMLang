@@ -1,5 +1,7 @@
 package vmlang.vm;
 
+import java.io.IOException;
+
 import vmlang.common.Opcodes;
 
 public class VM {
@@ -149,6 +151,11 @@ public class VM {
 					else
 						A = 0;
 					break;
+				case NEG_LT_A:
+					if(A < 0)
+						A = 1;
+					else
+						A = 0;
 				case AND:
 					if(A != 0 && B != 0)
 						A = 1;
@@ -162,8 +169,16 @@ public class VM {
 						A = 0;
 					break;
 				
+				// io
 				case PRINT_CHAR_A:
 					System.out.print((char)A);
+					break;
+				case READ_CHAR_A:
+					try {
+						A = System.in.read();
+					} catch(IOException e) {
+						System.out.println(e.getMessage());
+					}
 					break;
 			}
 		}
