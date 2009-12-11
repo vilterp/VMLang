@@ -4,9 +4,9 @@ abstract class ASTNode
 
 case class Prog(defs:List[Def]) extends ASTNode
 case class Def(name:String, args:List[ArgSpec],
-               returnType:Type, body:Expr) extends ASTNode
-case class ArgSpec(name:String, argType:Type) extends ASTNode
-case class Type(name:String,params:Option[List[Type]]) extends ASTNode
+               returnType:Option[TypeExpr], body:Expr) extends ASTNode
+case class ArgSpec(name:String, argType:TypeExpr) extends ASTNode
+case class TypeExpr(name:String,params:List[TypeExpr]) extends ASTNode
 
 abstract class Expr extends ASTNode
 
@@ -15,7 +15,7 @@ case class Call(name:String, args:List[Expr]) extends Expr
 
 abstract class Atom extends Expr
 
-case class Integer(value:BigInt) extends Atom
-case class Char(value:Char) extends Atom
+case class IntLit(value:BigInt) extends Atom
+case class CharLit(value:Char) extends Atom
 case object EmptyList extends Atom
 

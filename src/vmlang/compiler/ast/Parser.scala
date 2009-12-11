@@ -1,5 +1,6 @@
 package vmlang.compiler.ast
 
+import scala.runtime.RichString
 import scala.util.parsing.combinator.syntactical._
 
 object Parser extends StandardTokenParsers {
@@ -12,7 +13,7 @@ object Parser extends StandardTokenParsers {
   
   def program = (definition *) ^^ { l => Prog(l) }
   
-  def definition = ident ~ (argsSpec?) ~ typeSpec ~ ("=" ~> expr) ^^ {
+  def definition = ident ~ (argsSpec?) ~ (typeSpec?) ~ ("=" ~> expr) ^^ {
                                               case i ~ Some(as) ~ rt ~ e => Def(i,as,rt,e)
                                               case i ~ None ~ rt ~ e => Def(i,Nil,rt,e) }
   
@@ -22,7 +23,8 @@ object Parser extends StandardTokenParsers {
   
   def typeSpec = ":" ~> typeExpr
   
-  def typeExpr:Parser[Type] = ident ~ (typeParams?) ^^ { case i ~ t => Type(i,t) }
+  def typeExpr:Parser[TypeExpr] = ident ~ (typeParams?) ^^ { case i ~ Some(t) => TypeExpr(i,t)
+                                                         case i ~ None => TypeExpr(i,Nil) }
   
   def typeParams = "[" ~> repsep(typeExpr,",") <~ "]"
   
@@ -53,18 +55,23 @@ object Parser extends StandardTokenParsers {
                       "*" ^^^ { (a:Expr, b:Expr) => Call("*",List(a,b)) } |
                       "/" ^^^ { (a:Expr, b:Expr) => Call("/",List(a,b)) } )
   
-  def atom = ( number | list | call | parenthesizedExpr | unaryMinus | unaryNot )
+  def atom = ( number | list | string | call | parenthesizedExpr | unaryMinus | unaryNot )
+            // todo: char lit (not in standardtokenparsers...)
   
-  def list = "[" ~> repsep(expr,",") <~ "]" ^^ { l => Call(":",List(EmptyList)) }
-                // this should transform [1,2,3] into :(1,:(2,:(3,[])))
+  def list = "[" ~> repsep(expr,",") <~ "]" ^^ concatIze
+  
+  def string = stringLit ^^ { (s:String) => concatIze(new RichString(s) map { CharLit(_) }) }
+  
+  def concatIze(items:Seq[Expr]):Expr = items.foldRight(EmptyList.asInstanceOf[Expr]){
+                                                              (i,a) => Call(":",List(i,a)) }
   
   def parenthesizedExpr = "(" ~> expr <~ ")"
   
   def unaryNot:Parser[Expr] = "!" ~> atom ^^ { a => Call("!",List(a)) }
   
-  def unaryMinus:Parser[Expr] = "-" ~> atom ^^ { a => Call("*",List(a,Integer(BigInt(-1)))) }
+  def unaryMinus:Parser[Expr] = "-" ~> atom ^^ { a => Call("*",List(a,IntLit(BigInt(-1)))) }
   
-  def number = numericLit ^^ { s => Integer(BigInt(s)) }
+  def number = numericLit ^^ { s => IntLit(BigInt(s)) }
   
   def call = ident ~ (args ?) ^^ { case i ~ Some(a) => Call(i,a)
                     case i ~ None => Call(i,List()) }
@@ -74,6 +81,12 @@ object Parser extends StandardTokenParsers {
   // END OF RULES
   
   def parse(s:String) = phrase(program)(new lexical.Scanner(s))
+  
+  def parseTypeExpr(t:String) = phrase(typeExpr)(new lexical.Scanner(t)) match {
+    case Success(t, _) => t
+    case e: NoSuccess =>
+      throw new IllegalArgumentException(e.toString)
+  }
   
   def apply(s:String) = {
     parse(s) match {
