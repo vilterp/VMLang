@@ -4,29 +4,32 @@ import vmlang.compiler.ast._
 
 object Test extends UnitTest {
   
-  val tt = TypeTree(Trait("Value",0),List(
-                    TypeTree(Trait("Ord",0),List(
-                              TypeTree(Trait("Num",0),List(
-                                       TypeTree(Class("Int",0),Nil),
-                                       TypeTree(Class("Float",0),Nil))),
-                              TypeTree(Class("Char",0),Nil))
+  val tt = TypeTree(AbsType("Value"),List(
+                    TypeTree(AbsType("Ord"),List(
+                              TypeTree(AbsType("Num"),List(
+                                       TypeTree(PrimType("Int"),Nil),
+                                       TypeTree(PrimType("Float"),Nil))),
+                              TypeTree(PrimType("Char"),Nil))
                     ),
-                    TypeTree(Class("List",1),Nil),
-                    TypeTree(Class("Map",2),List(
-                      TypeTree(Class("HashMap",2),Nil)))
+                    TypeTree(RefType("List"),Nil),
+                    TypeTree(AbsType("Map"),List(
+                      TypeTree(RefType("HashMap"),Nil)))
                     ))
   
   implicit def string2typeExpr(s:String) = Parser.parseTypeExpr(s)
+  
+  implicit def string2type(s:String) = tt find s
   
   def main(args:Array[String]) = {
     shouldBe(tt.complies("Value","Char"),List(Complies))
     shouldBe(tt.complies("Int","Int"),List(Complies))
     shouldBe(tt.complies("Int","Char"),List(DoesntDescend("Int","Char")))
     shouldBe(tt.complies("Int","Slartibartfast"),List(NonexistentType("Slartibartfast")))
-    shouldBe(tt.complies("Map[Ord,Num]","HashMap[Char,Float]"),List(Complies))
-    shouldBe(tt.complies("Map[Ord,Num]","HashMap[Ooj,Boo]"),
-                            List(NonexistentType("Ooj"),NonexistentType("Boo")))
-    shouldBe(tt.complies("List","List[Int]"),List(WrongNumTypeParams("List",1,0)))
+    
+    shouldBe(tt.deepestCommonAncestor("Int","Int"),tt find "Int")
+    shouldBe(tt.deepestCommonAncestor("Int","Float"),tt find "Num")
+    shouldBe(tt.deepestCommonAncestor("Char","Int"),tt find "Ord")
+    shouldBe(tt.deepestCommonAncestor("Num","List"),tt find "Value")
   }
 }
 

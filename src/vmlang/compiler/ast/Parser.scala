@@ -3,6 +3,10 @@ package vmlang.compiler.ast
 import scala.runtime.RichString
 import scala.util.parsing.combinator.syntactical._
 
+class ParserError(msg:String) extends NormalCompilerError {
+  val repr = "Parser Error: " + msg
+}
+
 object Parser extends StandardTokenParsers {
   
   lexical.delimiters ++= List("+","-","*","/","(",")","[","]","=",":",",",">","<",
@@ -23,8 +27,7 @@ object Parser extends StandardTokenParsers {
   
   def typeSpec = ":" ~> typeExpr
   
-  def typeExpr:Parser[TypeExpr] = ident ~ (typeParams?) ^^ { case i ~ Some(t) => TypeExpr(i,t)
-                                                         case i ~ None => TypeExpr(i,Nil) }
+  def typeExpr:Parser[TypeExpr] = ident ^^ { i => TypeExpr(i) }
   
   def typeParams = "[" ~> repsep(typeExpr,",") <~ "]"
   
@@ -92,7 +95,7 @@ object Parser extends StandardTokenParsers {
     parse(s) match {
       case Success(tree, _) => tree
       case e: NoSuccess =>
-        throw new IllegalArgumentException(e.toString)
+        throw new ParserError(e.toString)
     }
   }
   

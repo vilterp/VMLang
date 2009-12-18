@@ -6,7 +6,7 @@ case class Prog(defs:List[Def]) extends ASTNode
 case class Def(name:String, args:List[ArgSpec],
                returnType:Option[TypeExpr], body:Expr) extends ASTNode
 case class ArgSpec(name:String, argType:TypeExpr) extends ASTNode
-case class TypeExpr(name:String,params:List[TypeExpr]) extends ASTNode
+case class TypeExpr(name:String) extends ASTNode
 
 abstract class Expr extends ASTNode
 
