@@ -17,7 +17,7 @@ object Parser extends StandardTokenParsers {
   
   def program = (definition *) ^^ { l => Prog(l) }
   
-  def definition = ident ~ (argsSpec?) ~ (typeSpec?) ~ ("=" ~> expr) ^^ {
+  def definition = ident ~ (argsSpec?) ~ typeSpec ~ ("=" ~> expr) ^^ {
                                               case i ~ Some(as) ~ rt ~ e => Def(i,as,rt,e)
                                               case i ~ None ~ rt ~ e => Def(i,Nil,rt,e) }
   
@@ -46,7 +46,7 @@ object Parser extends StandardTokenParsers {
                       "==" ^^^ { (a:Expr, b:Expr) => Call("==",List(a,b)) } |
                       "<=" ^^^ { (a:Expr, b:Expr) => Call("<=",List(a,b)) } |
                       ">=" ^^^ { (a:Expr, b:Expr) => Call(">=",List(a,b)) } |
-                      "!=" ^^^ { (a:Expr, b:Expr) => Call("!",List(a,b)) } )
+                      "!=" ^^^ { (a:Expr, b:Expr) => Call("!=",List(a,b)) } )
                       // I'm sure there's a super-elegant way to do this,
                         // but my Scala chops aren't up to it yet
   
@@ -58,7 +58,7 @@ object Parser extends StandardTokenParsers {
                       "*" ^^^ { (a:Expr, b:Expr) => Call("*",List(a,b)) } |
                       "/" ^^^ { (a:Expr, b:Expr) => Call("/",List(a,b)) } )
   
-  def atom = ( number | list | string | call | parenthesizedExpr | unaryMinus | unaryNot )
+  def atom = ( int | list | string | call | parenthesizedExpr | unaryMinus | unaryNot )
             // todo: char lit (not in standardtokenparsers...)
   
   def list = "[" ~> repsep(expr,",") <~ "]" ^^ concatIze
@@ -72,9 +72,9 @@ object Parser extends StandardTokenParsers {
   
   def unaryNot:Parser[Expr] = "!" ~> atom ^^ { a => Call("!",List(a)) }
   
-  def unaryMinus:Parser[Expr] = "-" ~> atom ^^ { a => Call("*",List(a,IntLit(BigInt(-1)))) }
+  def unaryMinus:Parser[Expr] = "-" ~> atom ^^ { a => Call("*",List(a,IntLit(-1))) }
   
-  def number = numericLit ^^ { s => IntLit(BigInt(s)) }
+  def int = numericLit ^^ { s => IntLit(s.toInt) }
   
   def call = ident ~ (args ?) ^^ { case i ~ Some(a) => Call(i,a)
                     case i ~ None => Call(i,List()) }

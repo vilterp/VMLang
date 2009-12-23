@@ -1,6 +1,8 @@
 package vmlang.vm;
 
 import java.io.IOException;
+import java.io.PrintStream;
+import java.io.InputStream;
 
 import vmlang.common.Opcodes;
 
@@ -14,20 +16,42 @@ public class VM {
 	private byte[] program;
 	private byte[] memory;
 	
+	// io
+	
+	private InputStream in;
+	private PrintStream out;
+	
+	private int stackStart;
+	
 	private static final Opcodes[] opcodes = Opcodes.values(); // inefficient? 
 	
-	public VM(byte[] prog, int mem_size) {
-		program = prog;
-		memory = new byte[mem_size];
+	public VM(byte[] prog, int heapSize, int stackSize) {
+		this(prog,heapSize,stackSize,System.in,System.out);
 	}
 	
-	public void run() {
+	public VM(byte[] prog, int stackSize, int heapSize, InputStream is, PrintStream os) {
+		if(heapSize % 8 != 0)
+			throw new IllegalArgumentException("Heap size must be divisible by 8 (for malloc)");
+		program = prog;
+		memory = new byte[heapSize + stackSize];
+		stackStart = heapSize;
+		in = is;
+		out = os;
+	}
+	
+	public void run() throws StackOverflowError {
 		int nextAddr;
 		while(true) {
-			switch(opcodes[progReadByte()]) {
-				
+			Opcodes opcode;
+			try {
+				opcode = opcodes[progReadByte()];
+			} catch(ArrayIndexOutOfBoundsException e) {
+				throw getMalfProgEx();
+			}
+			switch(opcode) {
+
 				// FLOW CONTROL
-				
+
 				// basic
 				case STOP:
 					return;
@@ -48,9 +72,9 @@ public class VM {
 					if(A >= 0)
 						counter = nextAddr;
 					break;
-				
+
 				// LOAD & STORE (Von-Neumann bottleneck)
-				
+
 				// int constants
 				case I_CONST_A:
 					A = progReadInt();
@@ -106,9 +130,9 @@ public class VM {
 				case MOVE_A_BP:
 					BP = A;
 					break;
-				
+
 				// REGISTER OPERATIONS
-				
+
 				// arithmetic
 				case I_ADD:
 					A = A + B;
@@ -168,55 +192,76 @@ public class VM {
 					else
 						A = 0;
 					break;
-				
+
 				// io
 				case PRINT_CHAR_A:
-					System.out.print((char)A);
+					out.print((char)A);
 					break;
 				case READ_CHAR_A:
 					try {
-						A = System.in.read();
+						A = in.read();
 					} catch(IOException e) {
-						System.out.println(e.getMessage());
+						out.println(e.getMessage());
 					}
 					break;
 			}
 		}
 	}
 	
-	public byte progReadByte() {
-		byte result = program[counter];
+	// PROGRAM READERS
+	
+	private byte progReadByte() {
+		byte result;
+		try {
+			result = program[counter];
+		} catch(ArrayIndexOutOfBoundsException e) {
+			throw getMalfProgEx();
+		}
 		counter++;
 		return result;
 	}
 	
-	public int progReadInt() {
+	private int progReadInt() {
 		return ((progReadByte() & 0xff) << 24) |
 		       ((progReadByte() & 0xff) << 16) |
 		       ((progReadByte() & 0xff) << 8) |
-			    (progReadByte() & 0xff);
+			     (progReadByte() & 0xff);
 	}
 	
-	public byte memReadByte(int addr) {
-		return memory[addr];
+	// MEMORY READERS & WRITERS
+	
+	private byte memReadByte(int addr) throws StackOverflowError {
+		try {
+			return memory[addr];
+		} catch(ArrayIndexOutOfBoundsException e) {
+			throw new StackOverflowError();
+		}
 	}
 	
-	public int memReadInt(int addr) {
+	private int memReadInt(int addr) throws StackOverflowError {
 		return ((memReadByte(addr) & 0xff) << 24) |
-			   ((memReadByte(addr+1) & 0xff) << 16) |
-			   ((memReadByte(addr+2) & 0xff) << 8) |
-				(memReadByte(addr+3) & 0xff);
+			     ((memReadByte(addr+1) & 0xff) << 16) |
+			     ((memReadByte(addr+2) & 0xff) << 8) |
+				   (memReadByte(addr+3) & 0xff);
 	}
 	
-	public void memWriteByte(int addr, byte val) {
-		memory[addr] = val;
+	private void memWriteByte(int addr, byte val) throws StackOverflowError {
+		try {
+			memory[addr] = val;
+		} catch(ArrayIndexOutOfBoundsException e) {
+			throw new StackOverflowError();
+		}
 	}
 	
-	public void memWriteInt(int addr, int val) {
+	private void memWriteInt(int addr, int val) throws StackOverflowError {
 		memWriteByte(addr  ,(byte)(0xff & (val >> 24)));
 		memWriteByte(addr+1,(byte)(0xff & (val >> 16)));
 		memWriteByte(addr+2,(byte)(0xff & (val >> 8)));
 		memWriteByte(addr+3,(byte)(0xff &  val));
+	}
+	
+	private IllegalArgumentException getMalfProgEx() {
+		return new IllegalArgumentException("Malformed program");
 	}
 	
 }

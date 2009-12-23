@@ -3,3 +3,5 @@ bin/*
 vmlang_log.txt
 .settings/*
 .manager/*
+.classpath
+
