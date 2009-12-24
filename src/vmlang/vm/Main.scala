@@ -1,76 +1,36 @@
 package vmlang.vm
 
 import java.io.{File, FileInputStream, FileNotFoundException, IOException}
-import vmlang.common.{OptParse, Args}
-import collection.immutable.{Set, EmptySet}
+import vmlang.common.{OptParser, FatalError}
 
-object Main {
+object Main extends OptParser {
   
-  // TODO: think up language name!
+  def numArgs(n:Int) = n == 1
+  val argErrorMsg = "supply 1 executable file to run"
+  val knownFlags = List()
+  val defaultOpts = Map("heap_size" -> "1024", "stack_size" -> "1024")
   val help =  "usage: *language name* <executable_file> <options>\n" +
               "-heap_size=<num bytes>      heap size in bytes\n" +
               "-stack_size=<num bytes>     stack size in bytes"
   
-  def main(as:Array[String]) = {
-    try {
-      val args = OptParse(as)
-      // check for extra arg pairs
-      args.opts.keySet.toList -- List("heap_size","stack_size") match {
-        case Nil =>
-        case l:List[String] => {
-          println("Unrecognized options: " + (l mkString ", "))
-          exit
-        }
-      }
-      // check for extra flags
-      args.flags match {
-        case s if s.isEmpty =>
-        case s:Seq[String] => {
-          println("Unrecognized flags: " + (s mkString ", "))
-          exit
-        }
-      }
-      // get file name
-      val fileName = args.args match {
-        case s if s.length == 1 => s.first
-        case _ => {
-          println("supply 1 file name")
-          exit
-        }
-      }
-      // get stack size
-      val stackSize = args.opts get "stack_size" match {
-        case Some(s) => try { s.toInt } catch {
-          case e:NumberFormatException => "not a valid stack size number"
-          exit
-        }
-        case None => 1024
-      }
-      // get heap size
-      val heapSize = args.opts get "heap_size" match {
-        case Some(s) => try { s.toInt } catch {
-          case e:NumberFormatException => "not a valid heap size number"
-          println(help)
-          throw new FatalError
-        }
-        case None => 1024
-      }
-    
-      // and, finally
-      try {
-        new VM(loadFileBytes(fileName),heapSize,stackSize).run()
-      } catch {
-        case e:StackOverflowError => { 
-          println("VM Error: Stack Overflow")
-          throw new FatalError
-        }
-        case e:IllegalArgumentException => {
-          println("VM Error: " + e.getMessage)
-          throw new FatalError
-        }
-      }
+  def run(args:List[String], flags:List[String], opts:Map[String,String]):Unit = {
+    val heapSize = try {
+      opts("heap_size").toInt
     } catch {
-      case e:FatalError =>
+      case e:NumberFormatException => throw FatalError("Invalid heap size argument")
+    }
+    val stackSize = try {
+      opts("stack_size").toInt
+    } catch {
+      case e:NumberFormatException => throw FatalError("Invalid stack size argument")
+    }
+    // business time
+    try {
+      new VM(loadFileBytes(args(0)), heapSize, stackSize).run
+    } catch {
+      case e:InitError => throw FatalError("Couldn't start VM: " + e.message)
+      case e:MalformedProgramError => throw FatalError("VM error: malformed program")
+      case e:StackOverflowError => throw FatalError("VM error: stack overflow")
     }
   }
   
@@ -81,22 +41,11 @@ object Main {
       in.read(result)
       result        
     } catch {
-      case e:FileNotFoundException => {
-        println("File not found: " + fileName)
-        throw new FatalError
-      }
-      case e:IOException => {
-        println("Error reading file " + fileName)
-        throw new FatalError
-      }
+      case e:FileNotFoundException =>
+              throw FatalError("File not found: " + fileName)
+      case e:IOException =>
+              throw FatalError("Error reading file " + fileName)
     }
   }
   
-  def exit = {
-    println(help)
-    throw new FatalError
-  }
-  
 }
-
-class FatalError extends Exception

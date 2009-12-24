@@ -25,13 +25,14 @@ public class VM {
 	
 	private static final Opcodes[] opcodes = Opcodes.values(); // inefficient? 
 	
-	public VM(byte[] prog, int heapSize, int stackSize) {
-		this(prog,heapSize,stackSize,System.in,System.out);
+	public VM(byte[] prog, int heapSize, int stackSize) throws InitError {
+		this(prog, heapSize, stackSize, System.in, System.out);
 	}
 	
-	public VM(byte[] prog, int stackSize, int heapSize, InputStream is, PrintStream os) {
+	public VM(byte[] prog, int heapSize, int stackSize, InputStream is, PrintStream os)
+	 																																				throws InitError {
 		if(heapSize % 8 != 0)
-			throw new IllegalArgumentException("Heap size must be divisible by 8 (for malloc)");
+			throw new InitError("Heap size must be divisible by 8 (for malloc)");
 		program = prog;
 		memory = new byte[heapSize + stackSize];
 		stackStart = heapSize;
@@ -39,7 +40,7 @@ public class VM {
 		out = os;
 	}
 	
-	public void run() throws StackOverflowError {
+	public void run() throws VMError {
 		int nextAddr;
 		while(true) {
 			Opcodes opcode;
@@ -192,7 +193,11 @@ public class VM {
 					else
 						A = 0;
 					break;
-
+				
+				case STACK_START:
+					A = stackStart;
+					break;
+				
 				// io
 				case PRINT_CHAR_A:
 					out.print((char)A);
@@ -210,7 +215,7 @@ public class VM {
 	
 	// PROGRAM READERS
 	
-	private byte progReadByte() {
+	private byte progReadByte() throws MalformedProgramError {
 		byte result;
 		try {
 			result = program[counter];
@@ -221,7 +226,7 @@ public class VM {
 		return result;
 	}
 	
-	private int progReadInt() {
+	private int progReadInt() throws MalformedProgramError {
 		return ((progReadByte() & 0xff) << 24) |
 		       ((progReadByte() & 0xff) << 16) |
 		       ((progReadByte() & 0xff) << 8) |
@@ -260,8 +265,8 @@ public class VM {
 		memWriteByte(addr+3,(byte)(0xff &  val));
 	}
 	
-	private IllegalArgumentException getMalfProgEx() {
-		return new IllegalArgumentException("Malformed program");
+	private MalformedProgramError getMalfProgEx() {
+		return new MalformedProgramError();
 	}
 	
 }

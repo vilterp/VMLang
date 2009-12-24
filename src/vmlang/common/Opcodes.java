@@ -39,7 +39,8 @@ public enum Opcodes {
 	AND,
 	OR,
 	PRINT_CHAR_A,
-	READ_CHAR_A;
+	READ_CHAR_A,
+	STACK_START;
 
 	public byte toByte() {
 		return (byte)ordinal();

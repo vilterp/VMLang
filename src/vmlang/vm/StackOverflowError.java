@@ -1,3 +1,3 @@
 package vmlang.vm;
 
-public class StackOverflowError extends Exception {}
+public class StackOverflowError extends VMError {}
