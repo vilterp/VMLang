@@ -1,16 +1,23 @@
 package vmlang.compiler.typecheck
 
-abstract class TypeCompliance
-case object Complies extends TypeCompliance
-abstract class DoesntComply extends TypeCompliance
-case class NonexistentType(name:String) extends DoesntComply
-case class DoesntDescend(expected:String, given:String) extends DoesntComply
+import vmlang.compiler.ast._
 
-class TypeErrors(errors:List[TypeError]) extends CompoundCompilerError(errors)
+class TypeErrors(errors:List[CompilerError]) extends CompoundCompilerError(errors)
+
 abstract class TypeError extends NormalCompilerError
-class NonexistentTypeError(name:String) extends TypeError {
-  val repr = "type " + name + " doesn't exist"
+
+case class NonexistentType(name:String) extends TypeError {
+  val repr = "Nonexistent type: \"" + name + "\""
 }
-class DoesntDescendError(expected:String, given:String) extends TypeError {
-  val repr = "given type " + given + " doesn't descend from expected type " + expected
+
+case class Mismatch(expected:TypeExpr, given:TypeExpr) extends TypeError {
+  val repr = "Type mismatch. Expected: " + expected.name + "; given: " + given.name
+}
+
+case class WrongNumTypeArgs(expected:Int, given:Int) extends TypeError {
+  val repr = "Wrong number of type arguments. Expected: " + expected + "; given: " + given
+}
+
+case class WrongNumCallArgs(expected:Int, given:Int) extends TypeError {
+  val repr = "Wrong number of arguments. Expected: " + expected + "; given: " + given
 }

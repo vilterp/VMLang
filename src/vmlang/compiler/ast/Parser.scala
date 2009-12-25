@@ -17,17 +17,18 @@ object Parser extends StandardTokenParsers {
   
   def program = (definition *) ^^ { l => Prog(l) }
   
-  def definition = ident ~ (argsSpec?) ~ typeSpec ~ ("=" ~> expr) ^^ {
-                                              case i ~ Some(as) ~ rt ~ e => Def(i,as,rt,e)
+  def definition = ident ~ (paramsSpec?) ~ typeSpec ~ ("=" ~> expr) ^^ {
+                                              case i ~ Some(ps) ~ rt ~ e => Def(i,ps,rt,e)
                                               case i ~ None ~ rt ~ e => Def(i,Nil,rt,e) }
   
-  def argsSpec = "(" ~> repsep(argSpec, ",") <~ ")"
+  def paramsSpec = "(" ~> repsep(paramSpec, ",") <~ ")"
   
-  def argSpec = ident ~ typeSpec ^^ { case i ~ t => ArgSpec(i,t) }
+  def paramSpec = ident ~ typeSpec ^^ { case i ~ t => ParamSpec(i,t) }
   
   def typeSpec = ":" ~> typeExpr
   
-  def typeExpr:Parser[TypeExpr] = ident ^^ { i => TypeExpr(i) }
+  def typeExpr:Parser[TypeExpr] = ident ~ (typeParams?) ^^ { case i ~ Some(tp) => TypeExpr(i,tp)
+                                                             case i ~ None     => TypeExpr(i,Nil) }
   
   def typeParams = "[" ~> repsep(typeExpr,",") <~ "]"
   

@@ -3,9 +3,11 @@ package vmlang.compiler.ast
 abstract class ASTNode
 
 case class Prog(defs:List[Def]) extends ASTNode
-case class Def(name:String, args:List[ArgSpec], returnType:TypeExpr, body:Expr) extends ASTNode
-case class ArgSpec(name:String, argType:TypeExpr) extends ASTNode
-case class TypeExpr(name:String) extends ASTNode
+case class Def(name:String, params:List[ParamSpec], returnType:TypeExpr, body:Expr) extends ASTNode
+case class ParamSpec(name:String, argType:TypeExpr) extends ASTNode
+case class TypeExpr(name:String, args:List[TypeExpr]) extends ASTNode {
+  override val toString = name + args.mkString("[",",","]")
+}
 
 abstract class Expr extends ASTNode
 

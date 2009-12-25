@@ -11,10 +11,10 @@ abstract class NormalCompilerError extends CompilerError {
 }
 
 abstract class CompoundCompilerError(errors:List[CompilerError]) {
-  def numErrors = errors.length
-  def repr:String = (errors flatMap { _.repr } ) mkString "\n"
+  val numErrors = errors.length
+  val repr:String = (errors map { _.repr } ) mkString "\n"
 }
 
-class NonexistentFuncError(funcName:String,inDef:String) extends NormalCompilerError {
-  val repr = "reference to nonexistent function " + funcName + " in " + inDef
+case class NonexistentFuncError(funcName:String) extends NormalCompilerError {
+  val repr = "Call to nonexistent function " + funcName
 }
