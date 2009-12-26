@@ -9,7 +9,7 @@ class ParserError(msg:String) extends NormalCompilerError {
 
 object Parser extends StandardTokenParsers {
   
-  lexical.delimiters ++= List("+","-","*","/","(",")","[","]","=",":",",",">","<",
+  lexical.delimiters ++= List("+","-","*","/","(",")","[","]","=","=>",":",",",">","<",
                                      ">=","<=","==","!","!=")
   lexical.reserved ++= List("if","then","else","and","or")
   
@@ -27,8 +27,13 @@ object Parser extends StandardTokenParsers {
   
   def typeSpec = ":" ~> typeExpr
   
-  def typeExpr:Parser[TypeExpr] = ident ~ (typeParams?) ^^ { case i ~ Some(tp) => TypeExpr(i,tp)
-                                                             case i ~ None     => TypeExpr(i,Nil) }
+  def typeExpr:Parser[TypeExpr] = ( normalTypeExpr | funcTypeExpr )
+  
+  def normalTypeExpr:Parser[NormalTypeExpr] = ident ~ (typeParams?) ^^ { case i ~ Some(tp) => NormalTypeExpr(i,tp)
+                                                                         case i ~ None     => NormalTypeExpr(i,Nil) }
+  
+  def funcTypeExpr:Parser[FuncTypeExpr] = ("(" ~> repsep(typeExpr,",") <~ ")") ~ ("=>" ~> typeExpr) ^^ {
+                                                                         case pts ~ rt => FuncTypeExpr(pts,rt) }
   
   def typeParams = "[" ~> repsep(typeExpr,",") <~ "]"
   

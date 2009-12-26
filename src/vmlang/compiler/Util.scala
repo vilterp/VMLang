@@ -10,7 +10,7 @@ abstract class NormalCompilerError extends CompilerError {
   val numErrors = 1
 }
 
-abstract class CompoundCompilerError(errors:List[CompilerError]) {
+abstract class CompoundCompilerError(errors:List[CompilerError]) extends CompilerError {
   val numErrors = errors.length
   val repr:String = (errors map { _.repr } ) mkString "\n"
 }

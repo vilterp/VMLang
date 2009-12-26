@@ -5,8 +5,17 @@ abstract class ASTNode
 case class Prog(defs:List[Def]) extends ASTNode
 case class Def(name:String, params:List[ParamSpec], returnType:TypeExpr, body:Expr) extends ASTNode
 case class ParamSpec(name:String, argType:TypeExpr) extends ASTNode
-case class TypeExpr(name:String, args:List[TypeExpr]) extends ASTNode {
-  override val toString = name + args.mkString("[",",","]")
+
+abstract class TypeExpr extends ASTNode {
+  val shortRepr:String
+}
+case class NormalTypeExpr(name:String, args:List[TypeExpr]) extends TypeExpr {
+  override val toString = name + (if(args.isEmpty) "" else args.mkString("[",",","]"))
+  val shortRepr = name
+}
+case class FuncTypeExpr(paramTypes:List[TypeExpr], returnType:TypeExpr) extends TypeExpr {
+  override val toString = paramTypes.mkString("(",",",")") + " => " + returnType
+  val shortRepr = toString
 }
 
 abstract class Expr extends ASTNode

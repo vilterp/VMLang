@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="VMLang" default="test" basedir=".">
+<project name="VMLang" default="compile_everything" basedir=".">
 	
 	<property name="base.dir" value="${basedir}" />
 	<property name="sources.dir" value="${base.dir}/src" />
@@ -38,10 +38,6 @@
 			<include name="**/*.scala"/>
 			<exclude name="**/*.java"/>
 		</scalac>
-	</target>
-	
-	<target name="test" depends="compile_everything">
-		<java classname="vmlang.compiler.Test" classpathref="build.classpath"/>
 	</target>
 	
 </project>

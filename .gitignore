@@ -4,4 +4,4 @@ vmlang_log.txt
 .settings/*
 .manager/*
 .classpath
-
+src/vmlang/compiler/testhelper
