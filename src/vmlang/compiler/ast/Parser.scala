@@ -3,7 +3,7 @@ package vmlang.compiler.ast
 import scala.runtime.RichString
 import scala.util.parsing.combinator.syntactical._
 
-class ParserError(msg:String) extends NormalCompilerError {
+case class ParserError(msg:String) extends NormalCompilerError {
   val repr = "Parser Error: " + msg
 }
 
@@ -29,11 +29,14 @@ object Parser extends StandardTokenParsers {
   
   def typeExpr:Parser[TypeExpr] = ( normalTypeExpr | funcTypeExpr )
   
-  def normalTypeExpr:Parser[NormalTypeExpr] = ident ~ (typeParams?) ^^ { case i ~ Some(tp) => NormalTypeExpr(i,tp)
-                                                                         case i ~ None     => NormalTypeExpr(i,Nil) }
+  def normalTypeExpr:Parser[TypeExpr] = ident ~ (typeParams?) ^^ { case i ~ Some(tp) => TypeExpr(i,tp)
+                                                                   case i ~ None     => TypeExpr(i,Nil) }
   
-  def funcTypeExpr:Parser[FuncTypeExpr] = ("(" ~> repsep(typeExpr,",") <~ ")") ~ ("=>" ~> typeExpr) ^^ {
-                                                                         case pts ~ rt => FuncTypeExpr(pts,rt) }
+  def funcTypeExpr:Parser[TypeExpr] = ("(" ~> repsep(typeExpr,",") <~ ")") ~ ("=>" ~> typeExpr) ^^ {
+                                        case pts ~ rt => if(pts.length <= 8)
+                                                            TypeExpr("Function" + pts.length, pts ::: List(rt))
+                                                          else
+                                          throw ParserError("can't make a function with more than 8 parameters") }
   
   def typeParams = "[" ~> repsep(typeExpr,",") <~ "]"
   
@@ -83,7 +86,7 @@ object Parser extends StandardTokenParsers {
   def int = numericLit ^^ { s => IntLit(s.toInt) }
   
   def call = ident ~ (args ?) ^^ { case i ~ Some(a) => Call(i,a)
-                    case i ~ None => Call(i,List()) }
+                                   case i ~ None => Call(i,Nil) }
   
   def args = "(" ~> repsep(expr,",") <~ ")"
   
@@ -101,7 +104,7 @@ object Parser extends StandardTokenParsers {
     parse(s) match {
       case Success(tree, _) => tree
       case e: NoSuccess =>
-        throw new ParserError(e.toString)
+        throw ParserError(e.toString)
     }
   }
   

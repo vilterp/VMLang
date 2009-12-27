@@ -41,7 +41,7 @@
 //     case Call("printChar",List(e)) => compExpr(e) ::: List(PrintChar)
 //     case Call("readChar",_) => List(ReadChar)
 //     
-//     case Call(name,args) => (args flatMap comExpr) ::: List()
+//     case Call(name,args) => (args flatMap comExpr) ::: Nil
 //     
 //     case Integer(v) => List(PushConstI(v))
 //     case Char(c) => List(PushConstC(c))

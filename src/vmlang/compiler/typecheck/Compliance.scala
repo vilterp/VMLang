@@ -11,7 +11,7 @@ case class NonexistentType(name:String) extends TypeError {
 }
 
 case class Mismatch(expected:TypeExpr, given:TypeExpr) extends TypeError {
-  val repr = "Type mismatch. Expected: " + expected.shortRepr + "; given: " + given.shortRepr
+  val repr = "Type mismatch. Expected: " + expected.repr + "; given: " + given.repr
 }
 
 case class WrongNumTypeArgs(expected:Int, given:Int) extends TypeError {
