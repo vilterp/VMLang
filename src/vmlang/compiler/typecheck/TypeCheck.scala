@@ -1,92 +1,125 @@
-// package vmlang.compiler.typecheck
-// 
-// import vmlang.compiler.ast._
-// import collection.immutable.HashMap
-// 
-// // TODO: check expr tree for calls to nonexistent functions first
-//     // otherwise, maps and stuff are hard
-// 
-// object TypeCheck {
-//   
-//   val typeTree =  TypeTree(AbsType("Value"),List(
-//                       TypeTree(AbsType("Eq"),List(
-//                         TypeTree(PrimType("Bool"),Nil),
-//                         TypeTree(PrimType("Null"),Nil),
-//                         TypeTree(AbsType("Ord"),List(
-//                             TypeTree(AbsType("Num"),List(
-//                                 TypeTree(PrimType("Int"),Nil),
-//                                 TypeTree(PrimType("Float"),Nil))),
-//                             TypeTree(PrimType("Char"),Nil)))))))
-//   
-//   type FuncTable = HashMap[String,FuncType]
-//   
-//   implicit def string2typeExpr(s:String) = Parser.parseTypeExpr(s).name
-//   
-//   val rootFuncTypes = HashMap(
-//     "+"            ->      FuncType(List("Num","Num"),"Num"),
-//     "-"            ->      FuncType(List("Num","Num"),"Num"),
-//     "*"            ->      FuncType(List("Num","Num"),"Num"),
-//     "/"            ->      FuncType(List("Num","Num"),"Num"),
-//     "=="           ->      FuncType(List("Eq","Eq"),"Bool"),
-//     "!="           ->      FuncType(List("Eq","Eq"),"Bool"),
-//     ">"            ->      FuncType(List("Ord","Ord"),"Bool"),
-//     ">="           ->      FuncType(List("Ord","Ord"),"Bool"),
-//     "<"            ->      FuncType(List("Ord","Ord"),"Bool"),
-//     "<="           ->      FuncType(List("Ord","Ord"),"Bool"),
-//     "true"         ->      FuncType(Nil,"Bool"),
-//     "false"        ->      FuncType(Nil,"Bool"),
-//     "null"         ->      FuncType(Nil,"Null"),
-//     "and"          ->      FuncType(List("Bool","Bool"),"Bool"),
-//     "or"           ->      FuncType(List("Bool","Bool"),"Bool"),
-//     "printChar"    ->      FuncType(List("Char"),"Null"),
-//     "getChar"      ->      FuncType(Nil,"Char"),
-//     "stackStart"   ->      FuncType(Nil,"Int")
-//   )
-//   
-//   def apply(prog:Prog):Prog =
-//       apply(prog, rootFuncTypes, typeTree)
-//   
-//   def apply(prog:Prog, ft:FuncTable, tt:TypeTree):Prog = 
-//       checkCompliance(prog, addTypeSigs(prog, ft), tt)
-//   
-//   private def addTypeSigs(p:Prog, ft:FuncTable):FuncTable =
-//       p.defs.foldLeft(ft){ (ft,d) => ft + (d.name -> FuncType(d.args, d.returnType)) }
-//   
-//   private def checkCompliance(p:Prog, ft:FuncTable, tt:TypeTree):Prog =
-//       (p.defs flatMap { checkDef(_, ft, tt) }) match {
-//         case Nil => p
-//         case l:List[CompilerError] => throw new TypeErrors(l)
-//       }
-//   
-//   private def checkDef(d:Def, ft:FuncTable, tt:TypeTree):List[CompilerError] =
-//       tt.complies(d.returnType, inferType(d.body)) // Type vs. TypeExpr ...
-//   
-//   def checkCall(call:Call, ft:FuncTable, tt:TypeTree):List[CompilerError] = {
-//     val giv = call.args
-//     ft.get(call.name) match {
-//       case Some(ft) => {
-//         val exp = ft.paramTypes
-//         if(exp.length == giv.length) Nil else List(WrongNumCallArgs(exp.length, giv.length)) :::
-//             ((exp zip (giv map { inferType(_) })) map { p => tt.complies(p._1,p._2) })
-//       }
-//       case None => List(NonexistentFuncError(call.name))
-//     }
-//   }
-//   
-//   def inferType(expr:Expr, funcTypes:FuncTable, typeTree:TypeTree):TypeExpr =
-//       inferType(expr, Map(), funcTypes, typeTree)
-//   
-//   // TODO: check function scope when inferring call
-//   def inferType(expr:Expr, scope:Map[String,Type], ft:FuncTable, tt:TypeTree):TypeExpr =
-//     expr match {
-//       case IntLit(_) => tt find "Int"
-//       case CharLit(_) => tt find "Char"
-//       case IfExpr(_, i, t) => typeTree.deepestCommonAncestor(inferType(i, funcTypes, typeTree),
-//                                                              inferType(t, funcTypes, typeTree))
-//       case c:Call => if(isParam(c, scope)) scope(c.name) else ft(c.name).returnType
-//     }
-//   
-//   private def isParam(call:Call, scope:Map[String,Type]):Boolean =
-//       call.params.isEmpty && scope isDefinedAt call.name
-//   
-// }
+package vmlang.compiler.typecheck
+
+import vmlang.compiler.ast._
+import collection.immutable.{ Map, HashMap }
+
+object TypeCheck {
+  
+  val typeTree =  TypeTree(AbsType("Value",0),List(
+                      TypeTree(AbsType("Function",0),List(
+                          TypeTree(RefType("Function0",1),Nil),
+                          TypeTree(RefType("Function1",2),Nil),
+                          TypeTree(RefType("Function2",3),Nil),
+                          TypeTree(RefType("Function3",4),Nil),
+                          TypeTree(RefType("Function4",5),Nil),
+                          TypeTree(RefType("Function5",6),Nil),
+                          TypeTree(RefType("Function6",7),Nil),
+                          TypeTree(RefType("Function7",8),Nil),
+                          TypeTree(RefType("Function8",9),Nil),
+                          TypeTree(RefType("Function9",10),Nil))),
+                      TypeTree(AbsType("Eq",0),List(
+                          TypeTree(PrimType("Bool"),Nil),
+                          TypeTree(PrimType("Null"),Nil),
+                          TypeTree(AbsType("Ord",0),List(
+                              TypeTree(PrimType("Char"),Nil),
+                              TypeTree(PrimType("Int"),Nil)))))))
+  
+  type FuncTable = Map[String,TypeExpr]
+  type Scope     = Map[String,TypeExpr]
+  
+  val rootFuncTypes = new HashMap[String, TypeExpr] ++ (List(
+    ("+"            ,      "(Int, Int) => Int"    ),
+    ("-"            ,      "(Int, Int) => Int"    ),
+    ("*"            ,      "(Int, Int) => Int"    ),
+    ("/"            ,      "(Int, Int) => Int"    ),
+    ("=="           ,      "(Eq, Eq) => Bool"     ),
+    ("!="           ,      "(Eq, Eq) => Bool"     ),
+    (">"            ,      "(Ord, Ord) => Bool"   ),
+    (">="           ,      "(Ord, Ord) => Bool"   ),
+    ("<"            ,      "(Ord, Ord) => Bool"   ),
+    ("<="           ,      "(Ord, Ord) => Bool"   ),
+    ("true"         ,      "() => Bool"           ),
+    ("false"        ,      "() => Bool"           ),
+    ("null"         ,      "() => Null"           ),
+    ("and"          ,      "(Bool, Bool) => Bool" ),
+    ("or"           ,      "(Bool, Bool) => Bool" ),
+    ("not"          ,      "(Bool) => Bool"       ),
+    ("printChar"    ,      "(Char) => Null"       ),
+    ("getChar"      ,      "() => Char"           ),
+    ("stackStart"   ,      "() => Int"            )
+  ) map { tp => (tp._1, Parser.parseTypeExpr(tp._2)) })
+  
+  def apply(prog:Prog):Prog =
+      apply(prog, rootFuncTypes, typeTree)
+  
+  def apply(prog:Prog, ft:FuncTable, tt:TypeTree):Prog =
+      checkCompliance(prog, addTypeSigs(ft, prog), tt)
+  
+  private def addTypeSigs(ft:FuncTable, p:Prog):FuncTable =
+      p.defs.foldLeft(ft){ (ft, d) => ft + (d.name -> TypeExpr("Function" + d.params.length,
+                                                    (d.params map { _.argType }) ::: List(d.returnType))) }
+  
+  private def checkCompliance(p:Prog, ft:FuncTable, tt:TypeTree):Prog =
+      (p.defs flatMap { checkDef(_, ft, tt) }) match {
+        case Nil => p
+        case l   => throw new TypeErrors(l.removeDuplicates)
+      }
+  
+  private def checkDef(d:Def, ft:FuncTable, tt:TypeTree):List[CompilerError] = {
+    val s = Map() ++ (d.params map { ps => (ps.name, ps.argType) })
+    checkCalls(d.body, s, ft, tt) match {
+      case Nil => tt.complies(d.returnType, inferType(d.body, s, ft, tt))
+      case l   => l
+    }
+  }
+  
+  private def checkCalls(e:Expr, s:Scope, ft:FuncTable, tt:TypeTree):List[CompilerError] =
+      e match {
+        case a:Atom          => Nil
+        case IfExpr(i, c, e) => checkCalls(List(i, c, e), s, ft, tt)
+        case c:Call          => checkCall(c, s, ft, tt) ::: checkCalls(c.args, s, ft, tt)
+      }
+    
+  private def checkCalls(es:List[Expr], s:Scope, ft:FuncTable, tt:TypeTree):List[CompilerError] =
+      es flatMap { e => checkCalls(e, s, ft, tt) }
+  
+  def checkCall(call:Call, scope:Scope, ft:FuncTable, tt:TypeTree):List[CompilerError] = {
+    val giv = call.args
+    (scope get call.name) match {
+      case Some(_) => Nil
+      case None    => (ft get call.name) match {
+        case Some(funcType) => {
+          val exp = funcType.args.init
+          (if(exp.length == giv.length) Nil else List(WrongNumCallArgs(exp.length, giv.length))) :::
+                                                                checkArgCompliance(exp, giv, scope, ft, tt)
+        }
+        case None => List(NonexistentFuncError(call.name))
+      }
+    }
+  }
+  
+  private def checkArgCompliance(expTypes:List[TypeExpr], args:List[Expr],
+                                        s:Scope, ft:FuncTable, tt:TypeTree):List[CompilerError] =
+      (expTypes zip args) flatMap { case (et, e) => checkCalls(e, s, ft, tt) match {
+        case Nil => tt.complies(et, inferType(e, s, ft, tt))
+        case l   => l
+      } }
+  
+  def inferType(expr:Expr, ft:FuncTable, tt:TypeTree):TypeExpr =
+      inferType(expr, Map(), ft, tt)
+  
+  def inferType(expr:Expr, scope:Scope, ft:FuncTable, tt:TypeTree):TypeExpr = {
+    expr match {
+      case IntLit(_)       => TypeExpr("Int",Nil)
+      case CharLit(_)      => TypeExpr("Char",Nil)
+      case FloatLit(_)     => TypeExpr("Float",Nil)
+      case IfExpr(_, i, t) => tt.deepestCommonAncestor(inferType(i, ft, tt),
+                                                       inferType(t, ft, tt))
+      case c:Call          => if(isParam(c, scope)) scope(c.name) else ft(c.name).args.last
+    }
+  }
+  
+  private def isParam(call:Call, scope:Scope):Boolean =
+      call.args.isEmpty && (scope isDefinedAt call.name)
+  
+}

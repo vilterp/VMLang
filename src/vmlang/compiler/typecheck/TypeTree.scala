@@ -2,7 +2,7 @@ package vmlang.compiler.typecheck
 
 import vmlang.compiler.ast.TypeExpr
 
-// could be more efficient: complies("Map[Num,Value]","TreeMap[Int,Float]") results in 44 calls to findSubType
+// todo: make it work w/ type vars
 
 case class TypeTree(t:Type, subTypes:List[TypeTree]) {
   
@@ -12,7 +12,7 @@ case class TypeTree(t:Type, subTypes:List[TypeTree]) {
           case true  => (exp.args zip giv.args) flatMap { p => complies(p._1, p._2) }
           case false => List(Mismatch(exp, giv))
         }
-        case es:List[TypeError] => es
+        case es => es
       }
   
   private def descends(e:String, g:String):Boolean =

@@ -7,6 +7,8 @@ case class ParserError(msg:String) extends NormalCompilerError {
   val repr = "Parser Error: " + msg
 }
 
+case object TooManyParams extends ParserError("can't make a function with more than 9 params")
+
 object Parser extends StandardTokenParsers {
   
   lexical.delimiters ++= List("+","-","*","/","(",")","[","]","=","=>",":",",",">","<",
@@ -17,9 +19,13 @@ object Parser extends StandardTokenParsers {
   
   def program = (definition *) ^^ { l => Prog(l) }
   
+  def iPromptStmt = ( definition | expr )
+  
   def definition = ident ~ (paramsSpec?) ~ typeSpec ~ ("=" ~> expr) ^^ {
-                                              case i ~ Some(ps) ~ rt ~ e => Def(i,ps,rt,e)
-                                              case i ~ None ~ rt ~ e => Def(i,Nil,rt,e) }
+                                    case i ~ Some(ps) ~ rt ~ e => Def(i, checkPs(ps), rt, e)
+                                    case i ~ None     ~ rt ~ e => Def(i, Nil, rt, e) }
+  
+  def checkPs(ps:List[ParamSpec]) = if(ps.length <= 9) ps else throw TooManyParams
   
   def paramsSpec = "(" ~> repsep(paramSpec, ",") <~ ")"
   
@@ -29,14 +35,17 @@ object Parser extends StandardTokenParsers {
   
   def typeExpr:Parser[TypeExpr] = ( normalTypeExpr | funcTypeExpr )
   
-  def normalTypeExpr:Parser[TypeExpr] = ident ~ (typeParams?) ^^ { case i ~ Some(tp) => TypeExpr(i,tp)
-                                                                   case i ~ None     => TypeExpr(i,Nil) }
+  def normalTypeExpr:Parser[TypeExpr] = ident ~ (typeParams?) ^^ { case i ~ Some(tp) => TypeExpr(i, tp)
+                                                                   case i ~ None     => TypeExpr(i, Nil) }
   
-  def funcTypeExpr:Parser[TypeExpr] = ("(" ~> repsep(typeExpr,",") <~ ")") ~ ("=>" ~> typeExpr) ^^ {
-                                        case pts ~ rt => if(pts.length <= 8)
-                                                            TypeExpr("Function" + pts.length, pts ::: List(rt))
-                                                          else
-                                          throw ParserError("can't make a function with more than 8 parameters") }
+  def funcTypeExpr:Parser[TypeExpr] = ("(" ~> repsep(typeExpr,",") <~ ")") ~ ("=>" ~> typeExpr) ^^
+                                                          { case pts ~ rt => mkFuncTypeExpr(pts, rt) }
+  
+  def mkFuncTypeExpr(paramTypes:List[TypeExpr], returnType:TypeExpr):TypeExpr =
+      if(paramTypes.length <= 9)
+        TypeExpr("Function" + paramTypes.length, paramTypes ::: List(returnType))
+      else
+        throw TooManyParams
   
   def typeParams = "[" ~> repsep(typeExpr,",") <~ "]"
   
@@ -74,12 +83,12 @@ object Parser extends StandardTokenParsers {
   
   def string = stringLit ^^ { (s:String) => concatIze(new RichString(s) map { CharLit(_) }) }
   
-  def concatIze(items:Seq[Expr]):Expr = items.foldRight(EmptyList.asInstanceOf[Expr]){
-                                                              (i,a) => Call(":",List(i,a)) }
+  def concatIze(items:Seq[Expr]):Expr = items.foldRight(Call("EmptyList",Nil).asInstanceOf[Expr]){
+                                                                        (i,a) => Call(":",List(i,a)) }
   
   def parenthesizedExpr = "(" ~> expr <~ ")"
   
-  def unaryNot:Parser[Expr] = "!" ~> atom ^^ { a => Call("!",List(a)) }
+  def unaryNot:Parser[Expr] = "not" ~> atom ^^ { a => Call("not",List(a)) }
   
   def unaryMinus:Parser[Expr] = "-" ~> atom ^^ { a => Call("*",List(a,IntLit(-1))) }
   
