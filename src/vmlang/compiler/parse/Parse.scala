@@ -9,7 +9,7 @@ case class ParserError(msg:String) extends NormalCompilerError {
 
 case object TooManyParams extends ParserError("can't make a function with more than 9 params")
 
-object Parser extends StandardTokenParsers {
+object Parse extends StandardTokenParsers {
   
   lexical.delimiters ++= List("+","-","*","/","(",")","[","]","=","=>",":",",",">","<",
                                      ">=","<=","==","!","!=")

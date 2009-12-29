@@ -3,7 +3,7 @@ package vmlang.compiler
 import vmlang.compiler.ast._
 import collection.immutable.HashSet
 
-object Simplifier {
+object Simplify {
   
   def apply(prog:Prog) = Prog(prog.defs map { case Def(n,a,r,body) => Def(n,a,r,simplify(body)) })
   
