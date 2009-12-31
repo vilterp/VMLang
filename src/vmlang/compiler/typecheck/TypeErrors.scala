@@ -1,6 +1,6 @@
 package vmlang.compiler.typecheck
 
-import vmlang.compiler.ast._
+import vmlang.compiler.ast.TypeExpr
 
 case class TypeErrors(errors:List[CompilerError]) extends CompoundCompilerError(errors)
 
@@ -20,4 +20,20 @@ case class WrongNumTypeArgs(expected:Int, given:Int) extends TypeError {
 
 case class WrongNumCallArgs(expected:Int, given:Int) extends TypeError {
   val repr = "Wrong number of arguments. Expected: " + expected + "; given: " + given
+}
+
+case class NonexistentFuncError(funcName:String) extends TypeError {
+  val repr = "Call to nonexistent function " + funcName
+}
+
+case class DuplicateDefError(name:String) extends TypeError {
+  val repr = "Two definitions with same name: " + name
+}
+
+case object NoMainError extends TypeError {
+  val repr = "No main function. (Must be () => Null)"
+}
+
+case class InvalidMainError(te:TypeExpr) extends TypeError {
+  val repr = "Function main is " + te + "; must be () => Null"
 }

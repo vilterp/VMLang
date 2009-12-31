@@ -2,7 +2,7 @@ package vmlang.compiler.ast
 
 abstract class ASTNode
 
-case class Prog(defs:List[Def]) extends ASTNode
+case class Prog(defs:Map[String, Def]) extends ASTNode
 case class ParamSpec(name:String, argType:TypeExpr) extends ASTNode
 case class TypeExpr(name:String, args:List[TypeExpr]) extends ASTNode {
   override val toString = if(isFunctionType)

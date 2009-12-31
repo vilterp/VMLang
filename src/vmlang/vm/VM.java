@@ -94,6 +94,12 @@ public class VM {
 				case I_LOAD_A_SP:
 					A = memReadInt(SP);
 					break;
+				case I_LOAD_A_A:
+					A = memReadInt(A);
+					break;
+				case I_LOAD_BP_SP:
+					BP = memReadInt(SP);
+					break;
 				case I_LOAD_B_SP:
 					B = memReadInt(SP);
 					break;
@@ -104,12 +110,18 @@ public class VM {
 				case B_LOAD_A_SP:
 					A = memReadByte(SP);
 					break;
+				case B_LOAD_A_A:
+					A = memReadByte(A);
+					break;
 				case B_LOAD_B_SP:
 					B = memReadByte(SP);
 					break;
 				// store int
 				case I_STORE_A_SP:
 					memWriteInt(SP,A);
+					break;
+				case I_STORE_BP_SP:
+					memWriteInt(SP,BP);
 					break;
 				// store byte
 				case B_STORE_A_SP:
@@ -134,7 +146,7 @@ public class VM {
 
 				// REGISTER OPERATIONS
 
-				// arithmetic
+				// int arithmetic
 				case I_ADD:
 					A = A + B;
 					break;
@@ -148,17 +160,36 @@ public class VM {
 					A = A / B;
 					break;
 				case I_MOD:
-					A = A * B;
+					A = A % B;
 					break;
 				case INC_A:
 					A++;
 					break;
+				// float arithmetic
+				case F_ADD:
+				  A = Float.floatToIntBits(Float.intBitsToFloat(A) + Float.intBitsToFloat(B));
+				  break;
+				case F_SUB:
+				  A = Float.floatToIntBits(Float.intBitsToFloat(A) - Float.intBitsToFloat(B));
+				  break;
+				case F_MUL:
+				  A = A = Float.floatToIntBits(Float.intBitsToFloat(A) * Float.intBitsToFloat(B));
+				  break;
+				case F_DIV:
+				  A = Float.floatToIntBits(Float.intBitsToFloat(A) / Float.intBitsToFloat(B));
+				  break;
+				case F_MOD:
+				  A = Float.floatToIntBits(Float.intBitsToFloat(A) % Float.intBitsToFloat(B));
+				  break;
 				// inc/dec
 				case INC_B:
 					B++;
 					break;
 				case INC_SP:
 					SP++;
+					break;
+				case INC_SP_INT:
+					SP += 4;
 					break;
 				case DEC_A:
 					A--;
@@ -169,6 +200,9 @@ public class VM {
 				case DEC_SP:
 					SP--;
 					break;
+				case DEC_SP_INT:
+					SP -= 4;
+					break;
 				// logic (0: false; non-0: true)
 				case NEG_A:
 					if(A == 0)
@@ -176,11 +210,24 @@ public class VM {
 					else
 						A = 0;
 					break;
-				case NEG_LT_A:
-					if(A < 0)
-						A = 1;
-					else
-						A = 0;
+				case EQ_A:
+				  if(A == 0)
+				    A = 1;
+				  else
+				    A = 0;
+				  break;
+				case LT_A:
+				  if(A < 0)
+				    A = 1;
+				  else
+				    A = 0;
+				  break;
+				case GT_A:
+				  if(A > 0)
+				    A = 1;
+				  else
+				    A = 0;
+				  break;
 				case AND:
 					if(A != 0 && B != 0)
 						A = 1;
@@ -202,6 +249,9 @@ public class VM {
 				case PRINT_CHAR_A:
 					out.print((char)A);
 					break;
+				case PRINT_INT_A:
+				  out.println(A);
+				  break;
 				case READ_CHAR_A:
 					try {
 						A = in.read();

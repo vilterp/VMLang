@@ -5,7 +5,9 @@ import collection.immutable.HashSet
 
 object Simplify {
   
-  def apply(prog:Prog) = Prog(prog.defs map { case Def(n,a,r,body) => Def(n,a,r,simplify(body)) })
+  def apply(prog:Map[String,CheckedDef]) =
+      Map[String,CheckedDef]() ++
+        (prog map { m => (m._1 -> CheckedDef(m._2.params, simplify(m._2.body))) })
   
   def simplify(e:Expr):Expr = e match {
     case a:Atom => a
@@ -34,7 +36,9 @@ object Simplify {
                                       Call(if(a == "true" && b == "true") "true" else "false", Nil)
       case ("or", List(Call(a,Nil),Call(b,Nil)))  =>
                                       Call(if(a == "true" || b == "true") "true" else "false", Nil)
-                                                  
+      
+      case (n, args) => Call(n, args)
+      
     }
   }
   

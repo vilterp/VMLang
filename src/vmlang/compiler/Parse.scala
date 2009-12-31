@@ -1,7 +1,11 @@
-package vmlang.compiler.ast
+package vmlang.compiler
 
-import scala.runtime.RichString
-import scala.util.parsing.combinator.syntactical._
+import vmlang.compiler.ast._
+
+import util.parsing.combinator.syntactical._
+import runtime.RichString
+
+import collection.immutable.HashMap
 
 case class ParserError(msg:String) extends NormalCompilerError {
   val repr = "Parser Error: " + msg
@@ -17,7 +21,8 @@ object Parse extends StandardTokenParsers {
   
   // RULES
   
-  def program = (definition *) ^^ { l => Prog(l) }
+  // TODO: duplicates get run over...
+  def program = (definition *) ^^ { l => Prog(new HashMap[String,Def] ++ { l map { d => (d.name, d) } }) }
   
   def iPromptStmt = ( definition | expr )
   

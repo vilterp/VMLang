@@ -83,6 +83,13 @@ case class TypeTree(t:Type, subTypes:List[TypeTree]) {
       }
   }
   
+  def find(tn:String):Type = {
+    findSubType(tn) match {
+      case Some(tt) => tt.t
+      case None     => throw NonexistentType(tn)
+    }
+  }
+  
   def isLeaf = subTypes.isEmpty
   
   def prettyPrint:String = prettyPrint(0).mkString

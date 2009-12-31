@@ -1,17 +1,19 @@
 package vmlang.compiler.typecheck
 
-import vmlang.compiler.ast._
-
 abstract class Type {
   val name:String
   val numParams:Int
+  val size:Int
   override def toString = name
-  def toTypeExpr = Parser.parseTypeExpr(toString)
 }
-case class AbsType(name:String, numParams:Int) extends Type
+case class AbsType(name:String, numParams:Int) extends Type {
+  val size = 4 // TODO: this is not right
+}
 abstract class ConcreteType extends Type
-case class RefType(name:String, numParams:Int) extends ConcreteType
-case class PrimType(name:String) extends ConcreteType {
+case class RefType(name:String, numParams:Int) extends ConcreteType {
+  val size = 4
+}
+case class PrimType(name:String, size:Int) extends ConcreteType {
   val numParams = 0
 }
 

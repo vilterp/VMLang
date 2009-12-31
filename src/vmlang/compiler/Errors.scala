@@ -14,7 +14,3 @@ abstract class CompoundCompilerError(errors:List[CompilerError]) extends Compile
   val numErrors = errors.length
   val repr:String = (errors map { _.repr } ) mkString "\n"
 }
-
-case class NonexistentFuncError(funcName:String) extends NormalCompilerError {
-  val repr = "Call to nonexistent function " + funcName
-}
