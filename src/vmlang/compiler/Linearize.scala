@@ -63,7 +63,7 @@ class Linearizer(prog:Map[String,CheckedDef]) {
     
     case IntLit(i)   => w(I_CONST_A, i); w(I_STORE_A_SP); w(INC_SP_INT)
     case CharLit(c)  => w(B_CONST_A, c.toByte); w(B_STORE_A_SP); w(INC_SP)
-    case FloatLit(f) => w(I_CONST_A, f); w(I_STORE_A_SP); w(INC_SP_INT)
+    case FloatLit(f) => w(I_CONST_A, java.lang.Float.floatToIntBits(f)); w(I_STORE_A_SP); w(INC_SP_INT)
     
     case Call("+", List(a, b)) => intOp(a, b, s, ()=>{ w(I_ADD) })
     case Call("-", List(a, b)) => intOp(a, b, s, ()=>{ w(I_SUB) })

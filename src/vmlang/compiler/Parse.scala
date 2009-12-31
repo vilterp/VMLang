@@ -111,8 +111,23 @@ object Parse extends StandardTokenParsers {
   def parseTypeExpr(t:String) = phrase(typeExpr)(new lexical.Scanner(t)) match {
     case Success(t, _) => t
     case e: NoSuccess =>
-      throw new IllegalArgumentException(e.toString)
+      throw new ParserError(e.toString)
   }
+  
+  def parseIPromptStmt(s:String) = {
+    phrase(iPromptStmt)(new lexical.Scanner(s)) match {
+      case Success(t, _) => t
+      case e: NoSuccess =>
+        throw ParserError(e.toString)
+    }
+  }
+  
+  def parseExpr(s:String) =
+    phrase(expr)(new lexical.Scanner(s)) match {
+      case Success(t, _) => t
+      case e: NoSuccess =>
+        throw new ParserError(e.toString)
+    }
   
   def apply(s:String) = {
     parse(s) match {

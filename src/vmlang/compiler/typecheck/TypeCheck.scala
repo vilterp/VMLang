@@ -42,7 +42,7 @@ object TypeCheck {
     ("or"           ,      "(Bool, Bool) => Bool" ),
     ("not"          ,      "(Bool) => Bool"       ),
     ("printInt"     ,      "(Int) => Null"        )
-  ) map { tp => (tp._1, Parser.parseTypeExpr(tp._2)) })
+  ) map { tp => (tp._1, Parse.parseTypeExpr(tp._2)) })
   
   def apply(prog:Prog):Map[String,CheckedDef] =
       apply(prog, rootFuncTypes, typeTree)
@@ -87,7 +87,7 @@ object TypeCheck {
       e match {
         case a:Atom          => Nil
         case IfExpr(i, c, e) => checkCalls(List(i, c, e), s, ft, tt)
-        case c:Call          => checkCall(c, s, ft, tt) ::: checkCalls(c.args, s, ft, tt)
+        case c:Call          => checkCall(c, s, ft, tt)
       }
     
   private def checkCalls(es:List[Expr], s:Scope, ft:FuncTable, tt:TypeTree):List[TypeError] =
@@ -115,17 +115,20 @@ object TypeCheck {
         case l   => l
       } }
   
-  def inferType(expr:Expr, ft:FuncTable, tt:TypeTree):TypeExpr =
-      inferType(expr, Map(), ft, tt)
+  def inferType(expr:Expr):TypeExpr = // for outside use
+      checkCalls(expr, Map[String,TypeExpr](), rootFuncTypes, typeTree) match {
+        case Nil => inferType(expr, Map(), rootFuncTypes, typeTree)
+        case es  => throw TypeErrors(es)
+      }
   
-  def inferType(expr:Expr, scope:Scope, ft:FuncTable, tt:TypeTree):TypeExpr = {
+  private def inferType(expr:Expr, s:Scope, ft:FuncTable, tt:TypeTree):TypeExpr = {
     expr match {
       case IntLit(_)       => TypeExpr("Int",Nil)
       case CharLit(_)      => TypeExpr("Char",Nil)
       case FloatLit(_)     => TypeExpr("Float",Nil)
-      case IfExpr(_, i, t) => tt.deepestCommonAncestor(inferType(i, ft, tt),
-                                                       inferType(t, ft, tt))
-      case c:Call          => if(isParam(c, scope)) scope(c.name) else ft(c.name).args.last
+      case IfExpr(_, i, t) => tt.deepestCommonAncestor(inferType(i, s, ft, tt),
+                                                       inferType(t, s, ft, tt))
+      case c:Call          => if(isParam(c, s)) s(c.name) else ft(c.name).args.last
     }
   }
   

@@ -56,7 +56,7 @@ abstract class OptParser {
                                 val s = (a substring 1) split '=';
                                 (s(0), s(1))
                             } } )
-    (args, flags, opts)
+    (args, flags map { _ substring 1 }, opts)
   }
   
 }

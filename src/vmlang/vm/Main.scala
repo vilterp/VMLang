@@ -6,10 +6,10 @@ import vmlang.common.{OptParser, FatalError}
 object Main extends OptParser {
   
   def numArgs(n:Int) = n == 1
-  val argErrorMsg = "supply 1 executable file to run"
+  val argErrorMsg = "supply 1 bytecode file to run"
   val knownFlags = List()
   val defaultOpts = Map("heap_size" -> "1024", "stack_size" -> "1024")
-  val help =  "usage: *language name* <executable_file> <options>\n" +
+  val help =  "usage: vmlang <bytecode file> <options>\n" +
               "-heap_size=<num bytes>      heap size in bytes\n" +
               "-stack_size=<num bytes>     stack size in bytes"
   

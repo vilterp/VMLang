@@ -5,12 +5,12 @@ abstract class ASTNode
 case class Prog(defs:Map[String, Def]) extends ASTNode
 case class ParamSpec(name:String, argType:TypeExpr) extends ASTNode
 case class TypeExpr(name:String, args:List[TypeExpr]) extends ASTNode {
+  val isFunctionType = (name startsWith "Function") && !(name endsWith("Function"))
   override val toString = if(isFunctionType)
                             args.init.mkString("(",",",")") + " => " + args.last
                           else
                             name + (if(args.isEmpty) "" else args.mkString("[",",","]"))
   val repr = if(isFunctionType) toString else name
-  val isFunctionType = (name startsWith "Function") && !(name endsWith("Function"))
 }
 
 abstract class IPromptStmt extends ASTNode
