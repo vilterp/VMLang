@@ -143,6 +143,9 @@ public class VM {
 				case MOVE_A_BP:
 					BP = A;
 					break;
+				case MOVE_SP_BP:
+					BP = SP;
+					break;
 
 				// REGISTER OPERATIONS
 

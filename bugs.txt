@@ -1,9 +1,25 @@
 COMPILER
 
-- function calls don't work
-- if statements aren't implemented
-- should be object-oriented -- will take care of overloading
-- linearizer uses Type#size to compute instructions, but defs that take parameters with abstract types don't know what they will be called with! this computation must take place on a per-call basis, when argument types are known (note this makes CheckedDef useless)
+Overall
+
+  - should be object-oriented -- will take care of overloading
+  - definitions with same name don't cause error
+
+Parser
+
+  - can't parse floats or chars
+    - use RegexParsers to make custom scanner
+      - error messages will be hard
+      - give location info to tokens, if possible
+        - maybe use scala.io.Source (has fromString method)
+    - then use custom scanner in existing parser
+  - unary "not"s aren't parsed right
+
+Linearizer
+
+  - function calls don't work
+  - if statements aren't implemented
+  - uses Type#size to compute instructions, but defs that take parameters with abstract types don't know what they will be called with! this computation must take place on a per-call basis, when argument types are known (note this makes CheckedDef useless)
 
 INTERACTIVE PROMPT
 

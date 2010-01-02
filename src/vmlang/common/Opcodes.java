@@ -27,6 +27,7 @@ public enum Opcodes {
 	MOVE_BP_A,
 	MOVE_A_SP,
 	MOVE_A_BP,
+	MOVE_SP_BP,
 	I_ADD,
 	I_SUB,
 	I_MUL,

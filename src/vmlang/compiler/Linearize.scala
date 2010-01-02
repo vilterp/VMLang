@@ -114,10 +114,12 @@ class Linearizer(prog:Map[String,CheckedDef]) {
     // push base pointer
     w(MOVE_BP_A)
     w(I_STORE_A_SP)
+    w(MOVE_SP_BP)
     w(INC_SP_INT)
-    // push program address
+    // push (program address+13)
+      // so it will return to the instruction right after the GOTO
     w(MOVE_COUNTER_A)
-    w(I_CONST_B, 12)
+    w(I_CONST_B, 13)
     w(I_ADD)
     w(I_STORE_A_SP)
     w(INC_SP_INT)
