@@ -1,5 +1,7 @@
 package vmlang.compiler.ast
 
+import vmlang.compiler.typecheck.Type
+
 abstract class ASTNode
 
 case class Prog(defs:Map[String, Def]) extends ASTNode
@@ -21,6 +23,7 @@ abstract class Expr extends IPromptStmt
 
 case class IfExpr(condition:Expr, ifExpr:Expr, thenExpr:Expr) extends Expr
 case class Call(name:String, args:List[Expr]) extends Expr
+case class TypedCall(call:Call, types:List[Type])
 
 abstract class Atom extends Expr
 

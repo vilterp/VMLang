@@ -3,6 +3,8 @@ package vmlang.compiler
 import vmlang.compiler.ast._
 import collection.immutable.HashSet
 
+// TODO: inline calls to functions like "a:Int = 2"
+
 object Simplify {
   
   def apply(prog:Map[String,CheckedDef]) =

@@ -17,8 +17,8 @@ object Main extends OptParser {
   val argErrorMsg = "supply 1 file to compile, or no argument for interactive prompt"
   val knownFlags = List("v")
   val defaultOpts = Map[String,String]()
-  val help = "usage: vmlangc <optional source file> <options>\n" +
-             "-v       print out messages about what the compiler is doing"
+  val help = "usage: vmlc <optional source file> <options>\n" +
+             "-v     print out messages about what the compiler is doing"
   
   def run(args:List[String], flags:List[String], opts:Map[String,String]):Unit =
       args match {

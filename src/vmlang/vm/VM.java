@@ -9,7 +9,7 @@ import vmlang.common.Opcodes;
 public class VM {
 	
 	// registers
-	private int A, B, SP, BP;
+	private int A, B, SP, FP;
 	private int counter;
 	
 	// memory
@@ -97,8 +97,8 @@ public class VM {
 				case I_LOAD_A_A:
 					A = memReadInt(A);
 					break;
-				case I_LOAD_BP_SP:
-					BP = memReadInt(SP);
+				case I_LOAD_FP_SP:
+					FP = memReadInt(SP);
 					break;
 				case I_LOAD_B_SP:
 					B = memReadInt(SP);
@@ -120,8 +120,8 @@ public class VM {
 				case I_STORE_A_SP:
 					memWriteInt(SP,A);
 					break;
-				case I_STORE_BP_SP:
-					memWriteInt(SP,BP);
+				case I_STORE_FP_SP:
+					memWriteInt(SP,FP);
 					break;
 				// store byte
 				case B_STORE_A_SP:
@@ -134,17 +134,17 @@ public class VM {
 				case MOVE_SP_A:
 					A = SP;
 					break;
-				case MOVE_BP_A:
-					A = BP;
+				case MOVE_FP_A:
+					A = FP;
 					break;
 				case MOVE_A_SP:
 					SP = A;
 					break;
-				case MOVE_A_BP:
-					BP = A;
+				case MOVE_A_FP:
+					FP = A;
 					break;
-				case MOVE_SP_BP:
-					BP = SP;
+				case MOVE_SP_FP:
+					FP = SP;
 					break;
 
 				// REGISTER OPERATIONS

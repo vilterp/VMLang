@@ -3,13 +3,12 @@ package vmlang.compiler.typecheck
 abstract class Type {
   val name:String
   val numParams:Int
-  val size:Int
   override def toString = name
 }
-case class AbsType(name:String, numParams:Int) extends Type {
-  val size = 4 // TODO: this is not right
+case class AbsType(name:String, numParams:Int) extends Type
+abstract class ConcreteType extends Type {
+  val size:Int
 }
-abstract class ConcreteType extends Type
 case class RefType(name:String, numParams:Int) extends ConcreteType {
   val size = 4
 }

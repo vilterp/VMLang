@@ -11,7 +11,7 @@ object Main extends OptParser {
   val argErrorMsg = "supply 1 bytecode file to disassemble"
   val knownFlags = List()
   val defaultOpts = Map[String,String]()
-  val help = "usage: vmlangd <bytecode file>\n"
+  val help = "usage: vmld <bytecode file>\n"
   
   def run(args:List[String], flags:List[String], opts:Map[String,String]):Unit =
       disassemble(args.head)
