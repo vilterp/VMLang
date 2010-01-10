@@ -18,8 +18,8 @@ case class WrongNumTypeArgs(expected:Int, given:Int) extends TypeError {
   val repr = "Wrong number of type arguments. Expected: " + expected + "; given: " + given
 }
 
-case class WrongNumCallArgs(expected:Int, given:Int) extends TypeError {
-  val repr = "Wrong number of arguments. Expected: " + expected + "; given: " + given
+case class WrongNumCallArgs(func:String, expected:Int, given:Int) extends TypeError {
+  val repr = "Wrong number of arguments for " + func + ". Expected: " + expected + "; given: " + given
 }
 
 case class NonexistentFuncError(funcName:String) extends TypeError {
@@ -27,7 +27,7 @@ case class NonexistentFuncError(funcName:String) extends TypeError {
 }
 
 case class DuplicateDefError(name:String) extends TypeError {
-  val repr = "Two definitions with same name: " + name
+  val repr = "Function " + name + " already defined. Taking first definition."
 }
 
 case object NoMainError extends TypeError {

@@ -3,7 +3,6 @@ COMPILER
 Overall
 
   - should be object-oriented -- will take care of overloading
-  - definitions with same name don't cause error
 
 Parser
 

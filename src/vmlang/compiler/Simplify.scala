@@ -7,9 +7,9 @@ import collection.immutable.HashSet
 
 object Simplify {
   
-  def apply(prog:Map[String,CheckedDef]) =
-      Map[String,CheckedDef]() ++
-        (prog map { m => (m._1 -> CheckedDef(m._2.params, simplify(m._2.body))) })
+  def apply(prog:Map[String,Def]):Map[String,Def] =
+      Map[String,Def]() ++
+        (prog map { case (name, d) => (name, Def(d.name, d.params, d.returnType, simplify(d.body))) })
   
   def simplify(e:Expr):Expr = e match {
     case a:Atom => a

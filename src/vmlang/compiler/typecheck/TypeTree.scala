@@ -59,8 +59,9 @@ case class TypeTree(t:Type, subTypes:List[TypeTree]) {
           case None => None
         }
   
-  private def checkValidTypeExpr(te:TypeExpr):List[TypeError] =
-        checkExistentAndNumArgs(te.name, te.args.length) ::: (te.args flatMap { a => checkValidTypeExpr(a) })
+  def checkValidTypeExpr(te:TypeExpr):List[TypeError] =
+      checkExistentAndNumArgs(te.name, te.args.length) :::
+              (te.args flatMap { a => checkValidTypeExpr(a) })
   
   private def checkExistentAndNumArgs(tn:String, numArgs:Int):List[TypeError] =
       findSubType(tn) match {

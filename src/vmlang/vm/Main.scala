@@ -1,7 +1,6 @@
 package vmlang.vm
 
-import java.io.{File, FileInputStream, FileNotFoundException, IOException}
-import vmlang.common.{OptParser, FatalError}
+import vmlang.common.optparser._
 
 object Main extends OptParser {
   
@@ -31,20 +30,6 @@ object Main extends OptParser {
       case e:InitError => throw FatalError("Couldn't start VM: " + e.message)
       case e:MalformedProgramError => throw FatalError("VM error: malformed program")
       case e:StackOverflowError => throw FatalError("VM error: stack overflow")
-    }
-  }
-  
-  def loadFileBytes(fileName:String):Array[Byte] = {
-    try {
-      val in = new FileInputStream(new File(fileName))
-      val result = new Array[Byte](in.available)
-      in.read(result)
-      result        
-    } catch {
-      case e:FileNotFoundException =>
-              throw FatalError("File not found: " + fileName)
-      case e:IOException =>
-              throw FatalError("Error reading file " + fileName)
     }
   }
   

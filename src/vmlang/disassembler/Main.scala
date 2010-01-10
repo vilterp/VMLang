@@ -1,6 +1,7 @@
 package vmlang.disassembler
 
-import vmlang.common.{OptParser, FatalError, Opcodes}
+import vmlang.common.optparser._
+import vmlang.common.Opcodes
 import vmlang.common.Opcodes._
 
 import java.io.{File, FileInputStream, DataInputStream, FileNotFoundException, IOException, EOFException}

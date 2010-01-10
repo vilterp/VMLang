@@ -1,6 +1,9 @@
-package vmlang.common
+package vmlang.common.optparser
 
 import collection.immutable.HashMap
+
+import java.io.{File, FileOutputStream, FileInputStream, FileNotFoundException, IOException}
+import scala.io.Source
 
 abstract class OptParser {
   
@@ -58,6 +61,39 @@ abstract class OptParser {
                             } } )
     (args, flags map { _ substring 1 }, opts)
   }
+  
+  def loadFileBytes(fileName:String):Array[Byte] = {
+    try {
+      val in = new FileInputStream(new File(fileName))
+      val result = new Array[Byte](in.available)
+      in.read(result)
+      result        
+    } catch {
+      case e:FileNotFoundException =>
+              throw FatalError("File not found: " + fileName)
+      case e:IOException =>
+              throw FatalError("Error reading file " + fileName)
+    }
+  }
+  
+  def writeFile(output:Array[Byte], fileName:String):Unit =
+      try {
+        new FileOutputStream(new File(fileName)).write(output)
+      } catch {
+        case e:FileNotFoundException => throw FatalError("Error creating file " + fileName)
+        case e:IOException => throw FatalError("Error writing file " + fileName)
+      }
+  
+  def writeFile(output:List[Byte], fileName:String):Unit =
+      writeFile(output.toArray, fileName)
+  
+  def loadFile(fileName:String):String =
+      try {
+        Source.fromFile(fileName).getLines.mkString
+      } catch {
+        case e:FileNotFoundException => throw FatalError("File not found: " + fileName)
+        case e:IOException => throw FatalError("Error reading file " + fileName)
+      }
   
 }
 

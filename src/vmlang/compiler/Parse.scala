@@ -21,8 +21,7 @@ object Parse extends StandardTokenParsers {
   
   // RULES
   
-  // TODO: duplicates get run over...
-  def program = (definition *) ^^ { l => Prog(new HashMap[String,Def] ++ { l map { d => (d.name, d) } }) }
+  def program = definition +
   
   def iPromptStmt = ( definition | expr )
   
