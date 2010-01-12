@@ -12,33 +12,38 @@
 // 
 // object Linearize {
 //   
-//   def apply(prog:Prog):Array[Byte] = new Linearizer(prog).run
+//   def apply(prog:List[Def], tt:TypeTree, ft:Map[String,TypeExpr]):Array[Byte] = 
+//       new Linearizer(prog, tt).run
 //   
 // }
 // 
-// class Linearizer(prog:Prog) {
+// class Linearizer(defs:List[Def], tt:TypeTree, ft:Map[String,TypeExpr]) {
 //   
-//   private val baos = new ByteArrayOutputStream
-//   private val out = new DataOutputStream(baos)
-//   private val refs = new HashMap[Int,String]
-//   private val startingPoints = new HashMap[String,Int]
+//   type Scope = List[(String, TypeExpr)]
+//   
+//   val baos = new ByteArrayOutputStream
+//   val out = new DataOutputStream(baos)
+//   val refs = new HashMap[Int,String]
+//   val startingPoints = new HashMap[String,Int]
+//   
+//   val rtSizes = Map[String,Int]() ++ (defs map { d => (d.name, tt getSize d.returnType) })
+//   val scopes = Map[String,Int]() ++
+//                 (defs map { d => (d.name, d.params map { p => (p.name, tt getSize p.argType) }) })
 //   
 //   def run:Array[Byte] = {
 //     wExpr(Call("main", Nil), Nil)
 //     w(STOP)
-//     for((n, d) <- prog.defs) {
+//     for((n, d) <- defs) {
 //       startingPoints += (n -> out.size)
-//       wExpr(d.body, d.params)
-//       // goto return address (on stack)
-//       w(MOVE_A_FP)
-//       w(DEC_SP_INT)
-//       w(I_LOAD_A_SP)
-//       w(GOTO_A)
+//       // write def body expr
+//       val scope = scopes(n)
+//       wExpr(d.body, scope)
+//       wDefPostlude(scope.foldLeft(0){ _ + _._2 }, rtSizes(n))
 //     }
 //     resolveGotos
 //   }
 //   
-//   private def resolveGotos:Array[Byte] = {
+//   def resolveGotos:Array[Byte] = {
 //     val result = baos.toByteArray
 //     for((ind, ref) <- refs) {
 //       val refInd = startingPoints(ref)
@@ -51,12 +56,7 @@
 //     result
 //   }
 //   
-//   private def w(oc:Opcodes):Unit = out.write(oc.toByte)
-//   private def w(oc:Opcodes, arg:Int):Unit = { w(oc); out.writeInt(arg) }
-//   private def w(oc:Opcodes, arg:Float):Unit = { w(oc); out.writeFloat(arg) }
-//   private def w(oc:Opcodes, arg:Byte):Unit = { w(oc); out.writeByte(arg) }
-//   
-//   private def wExpr(e:Expr, s:Scope):Unit = e match {
+//   def wExpr(e:Expr, s:Scope):Unit = e match {
 //     
 //     case IntLit(i)   => w(I_CONST_A, i); w(I_STORE_A_SP); w(INC_SP_INT)
 //     case CharLit(c)  => w(B_CONST_A, c.toByte); w(B_STORE_A_SP); w(INC_SP)
@@ -85,29 +85,29 @@
 //     case Call("printInt", List(a)) => wExpr(a, s); wPopIntA; w(PRINT_INT_A)
 //     
 //     case Call(name, args) => argOffset(name, s) match {
-//       case Some(offset) => 
+//       case Some(offset) => // is parameter
 //           w(MOVE_FP_A)
 //           w(I_CONST_B, offset)
 //           w(I_SUB)
 //           w(I_LOAD_A_A)
 //           w(I_STORE_A_SP)
 //           w(INC_SP_INT)
-//       case None         => 
+//       case None         => // is call
 //           (args foreach { wExpr(_, s) })
 //           wCallPrelude
 //           wGoto(name)
-//           wCallPostlude(prog(name).params.foldLeft(0){ _ + _._2}) // retrieve returned value
+//           wCallPostlude(scopes(name).foldLeft(0){ _ + _._2 }) // retrieve returned value
 //     }
 //     
 //   }
 //   
-//   private def argOffset(name:String, scope:Scope):Option[Int] =
+//   def argOffset(name:String, scope:Scope):Option[Int] =
 //       (scope findIndexOf { _._1 == name }) match {
 //         case -1    => None
 //         case index => Some((scope drop index).foldLeft(0){ _ + _._2 })
 //       }
 //   
-//   private def wCallPrelude = {
+//   def wCallPrelude = {
 //     // push base pointer
 //     w(MOVE_FP_A)
 //     w(I_STORE_A_SP)
@@ -122,42 +122,52 @@
 //     w(INC_SP_INT)
 //   }
 //   
-//   private def wGoto(ref:String) {
+//   def wGoto(ref:String) {
 //     refs += (out.size -> ref)
 //     w(GOTO, 0) // the 0 will be replaced in resolveGotos
 //   }
 //   
-//   private def wCallPostlude(paramSize:Int) = {
-//     // load answer into FP
-//     w(INC_SP_INT)
-//     w(I_LOAD_FP_SP)
-//     // save answer from FP to stack
-//     w(MOVE_SP_A)
-//     w(I_CONST_B, paramSize + 8)
+//   def wDefPostlude(paramSize:Int, rtSize:Int) = {
+//     // decrement SP to point at return value
+//     for(i <- (1 to (rtSize / 4)))
+//       w(DEC_SP_INT)
+//     for(i <- (1 to (rtSize % 4)))
+//       w(DEC_SP)
+//     // store answer on calling function's operand stack
+//     w(MOVE_FP_A)
+//     w(I_CONST_B, paramSize) // !!! what about functions w/ no params?!
 //     w(I_SUB)
-//     w(MOVE_A_SP)
-//     w(I_STORE_FP_SP)
-//     // get FP from stack
+//     w(MOVE_A_B)
+//     w(I_LOAD_A_SP)
+//     w(I_STORE_A_B)
+//     // set FP to saved FP (on stack)
+//     w(DEC_SP_INT)
+//     w(DEC_SP_INT)
+//     w(I_LOAD_FP_SP) // load the value at addr SP into FP
+//     // goto return address (on stack)
+//     w(INC_SP_INT)
+//     w(I_LOAD_A_SP)
+//     w(GOTO_A)
+//   }
+//   
+//   def getSize(e:Expr) =
+//       tt.getSize(TypeCheck.inferType(e, tt, allFuncs))
+//   
+//   def wCallPostlude(paramSize:Int, rtSize:Int) = {
 //     w(MOVE_SP_A)
-//     w(I_CONST_B, paramSize)
-//     w(I_ADD)
-//     w(MOVE_A_SP)
-//     w(I_LOAD_FP_SP)
-//     // move SP back to operand stack
-//     w(MOVE_SP_A)
-//     w(I_CONST_B, paramSize)
+//     w(I_CONST_B, 4 + (paramSize - rtSize))
 //     w(I_SUB)
 //     w(MOVE_A_SP)
 //   }
 //   
-//   private def cmpOp(a:Expr, b:Expr, s:Scope, cmp:()=>Unit) =
+//   def cmpOp(a:Expr, b:Expr, s:Scope, cmp:()=>Unit) =
 //       intOp(a, b, s, { w(I_SUB); cmp(); wPushByte })
 //   
-//   private def intOp(a:Expr, b:Expr, s:Scope, ops:()=>Unit) = {
+//   def intOp(a:Expr, b:Expr, s:Scope, ops:()=>Unit) = {
 //     intOpNoPush(a, b, s, ops)
 //     wPushInt
 //   }
-//   private def intOpNoPush(a:Expr, b:Expr, s:Scope, ops:()=>Unit) = {
+//   def intOpNoPush(a:Expr, b:Expr, s:Scope, ops:()=>Unit) = {
 //     wExpr(a, s)
 //     wExpr(b, s)
 //     wPopIntB
@@ -165,11 +175,11 @@
 //     ops()
 //   }
 //   
-//   private def byteOp(a:Expr, b:Expr, s:Scope, ops:()=>Unit) = {
+//   def byteOp(a:Expr, b:Expr, s:Scope, ops:()=>Unit) = {
 //     byteOpNoPush(a, b, s, ops)
 //     wPushByte
 //   }
-//   private def byteOpNoPush(a:Expr, b:Expr, s:Scope, ops:()=>Unit) = {
+//   def byteOpNoPush(a:Expr, b:Expr, s:Scope, ops:()=>Unit) = {
 //     wExpr(a, s)
 //     wExpr(b, s)
 //     wPopByteB
@@ -177,12 +187,17 @@
 //     ops()
 //   }
 //   
-//   private def wPopIntA = { w(DEC_SP_INT); w(I_LOAD_A_SP) }
-//   private def wPopIntB = { w(DEC_SP_INT); w(I_LOAD_B_SP) }
-//   private def wPushInt = { w(I_STORE_A_SP); w(INC_SP_INT) }
+//   def wPopIntA = { w(DEC_SP_INT); w(I_LOAD_A_SP) }
+//   def wPopIntB = { w(DEC_SP_INT); w(I_LOAD_B_SP) }
+//   def wPushInt = { w(I_STORE_A_SP); w(INC_SP_INT) }
 //   
-//   private def wPopByteA = { w(DEC_SP); w(B_LOAD_A_SP) }
-//   private def wPopByteB = { w(DEC_SP); w(B_LOAD_B_SP) }
-//   private def wPushByte() = { w(DEC_SP); w(B_STORE_A_SP); }
+//   def wPopByteA = { w(DEC_SP); w(B_LOAD_A_SP) }
+//   def wPopByteB = { w(DEC_SP); w(B_LOAD_B_SP) }
+//   def wPushByte() = { w(DEC_SP); w(B_STORE_A_SP); }
+//   
+//   def w(oc:Opcodes):Unit = out.write(oc.toByte)
+//   def w(oc:Opcodes, arg:Int):Unit = { w(oc); out.writeInt(arg) }
+//   def w(oc:Opcodes, arg:Float):Unit = { w(oc); out.writeFloat(arg) }
+//   def w(oc:Opcodes, arg:Byte):Unit = { w(oc); out.writeByte(arg) }
 //   
 // }

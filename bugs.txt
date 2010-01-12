@@ -2,7 +2,8 @@ COMPILER
 
 Overall
 
-  - should be object-oriented -- will take care of overloading
+  - what about overloading (typeclasses, abstract classes, oh my!)
+  - doesn't give error if user tries to define "true" or any other root function
 
 Parser
 

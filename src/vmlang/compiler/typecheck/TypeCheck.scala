@@ -44,23 +44,26 @@ object TypeCheck {
     ("printInt"     ,      "(Int) => Null"        )
   ) map { tp => (tp._1, Parse.parseTypeExpr(tp._2)) })
   
-  def apply(defs:List[Def]):Map[String,Def] =
+  def apply(defs:List[Def]):Env =
       apply(defs, rootFuncTypes, typeTree)
   
-  def apply(defs:List[Def], ft:FuncTable, tt:TypeTree):Map[String,Def] = {
+  def apply(defs:List[Def], ft:FuncTable, tt:TypeTree):Env = {
     val (ds, dupErrors) = checkForDuplicates(defs)
-    (dupErrors ::: checkForValidMain(ds) ::: checkCompliance(ds, addTypeSigs(ft, defs), tt)) match {
-      case Nil => Map[String,Def]() ++ (ds map { d => (d.name, d) })
+    val allFuncs = addTypeSigs(ft, defs)
+    (dupErrors ::: checkForValidMain(ds) ::: checkCompliance(ds, allFuncs, tt)) match {
+      case Nil =>
+          val defs = Map[String,Def]() ++ (ds map { d => (d.name, d) })
+          Env(defs, allFuncs, tt)
       case es  => throw new TypeErrors(es.removeDuplicates)
     }
   }
   
-  private def checkForDuplicates(defs:List[Def]):(List[Def], List[TypeError]) = {
+  def checkForDuplicates(defs:List[Def]):(List[Def], List[TypeError]) = {
       val (nonDups, dups) = checkForDuplicates(Nil, defs)
       (nonDups, dups map { d => DuplicateDefError(d.name) })
   }
   
-  private def checkForDuplicates(alreadyDefined:List[Def], defs:List[Def]):(List[Def], List[Def]) =
+  def checkForDuplicates(alreadyDefined:List[Def], defs:List[Def]):(List[Def], List[Def]) =
       defs match {
         case Nil           => (alreadyDefined, Nil)
         case first :: rest => {
@@ -73,7 +76,7 @@ object TypeCheck {
         }
       }
   
-  private def checkForValidMain(defs:List[Def]):List[TypeError] =
+  def checkForValidMain(defs:List[Def]):List[TypeError] =
       // check that main exists and is () => Null
       (defs find { _.name == "main" }) match {
         case Some(d) => (d.returnType == TypeExpr("Null",Nil) && d.params == Nil) match {
@@ -86,20 +89,21 @@ object TypeCheck {
   def addTypeSigs(ft:FuncTable, defs:List[Def]):FuncTable =
       defs.foldLeft(ft){ (ft, d) => ft + (d.name -> mkFuncTypeExpr(d)) }
   
-  private def mkFuncTypeExpr(d:Def):TypeExpr =
+  def mkFuncTypeExpr(d:Def):TypeExpr =
       TypeExpr("Function" + d.params.length, (d.params map { _.argType }) ::: List(d.returnType))
   
-  private def checkCompliance(defs:List[Def], ft:FuncTable, tt:TypeTree):List[TypeError] =
+  def checkCompliance(defs:List[Def], ft:FuncTable, tt:TypeTree):List[TypeError] =
       defs flatMap { d => checkDef(d, ft, tt) }
   
   def checkDef(d:Def, ft:FuncTable, tt:TypeTree):List[TypeError] = {
     val scope = Map() ++ (d.params map { ps => (ps.name, ps.argType) })
     (d.params flatMap { ps => tt.checkValidTypeExpr(ps.argType) }) :::
-    (tt.checkValidTypeExpr(d.returnType)) :::
-    (checkCalls(d.body, scope, ft, tt) match {
-      case Nil => tt.complies(d.returnType, inferType(d.body, scope, ft, tt))
-      case l   => l
-    })
+      (tt.checkValidTypeExpr(d.returnType)) :::
+        (tt.checkCompilableTypeExpr(d.returnType, { te => UncompilableTypeSpecError(te) })) :::
+          (checkCalls(d.body, scope, ft, tt) match {
+            case Nil => tt.complies(d.returnType, inferType(d.body, scope, ft, tt))
+            case l   => l
+          })
   }
   
   def checkCalls(e:Expr, s:Scope, ft:FuncTable, tt:TypeTree):List[TypeError] =
@@ -119,10 +123,10 @@ object TypeCheck {
       case None    => (ft get call.name) match {
         case Some(funcType) => {
           val exp = funcType.args.init
-          if(exp.length == giv.length)
+          (if(exp.length == giv.length)
             Nil
           else
-            WrongNumCallArgs(call.name, exp.length, giv.length) ::
+            List(WrongNumCallArgs(call.name, exp.length, giv.length))) :::
                                                 checkArgCompliance(exp, giv, scope, ft, tt)
         }
         case None => NonexistentFuncError(call.name) :: checkCalls(call.args, scope, ft, tt)
@@ -134,15 +138,12 @@ object TypeCheck {
                                         s:Scope, ft:FuncTable, tt:TypeTree):List[TypeError] =
       checkCalls(args.dropRight(expTypes.length - args.length), s, ft, tt) :::
       ((expTypes zip args) flatMap { case (et, e) => checkCalls(e, s, ft, tt) match {
-        case Nil => tt.complies(et, inferType(e, s, ft, tt))
+        case Nil =>
+            val inferredTypeExpr = inferType(e, s, ft, tt)
+            tt.complies(et, inferredTypeExpr) :::
+              tt.checkCompilableTypeExpr(inferredTypeExpr, { te => UncompilableArgTypeError(te) })
         case l   => l
       } })
-  
-  def inferType(expr:Expr):TypeExpr = // for outside use
-      checkCalls(expr, Map[String,TypeExpr](), rootFuncTypes, typeTree) match {
-        case Nil => inferType(expr, Map(), rootFuncTypes, typeTree)
-        case es  => throw TypeErrors(es)
-      }
   
   def inferType(expr:Expr, s:Scope, ft:FuncTable, tt:TypeTree):TypeExpr = {
     expr match {
@@ -155,7 +156,7 @@ object TypeCheck {
     }
   }
   
-  private def isParam(call:Call, scope:Scope):Boolean =
+  def isParam(call:Call, scope:Scope):Boolean =
       call.args.isEmpty && (scope isDefinedAt call.name)
   
 }

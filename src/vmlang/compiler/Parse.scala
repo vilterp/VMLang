@@ -15,6 +15,36 @@ case object TooManyParams extends ParserError("can't make a function with more t
 
 object Parse extends StandardTokenParsers {
   
+  def apply(s:String) =
+      phrase(program)(new lexical.Scanner(s)) match {
+        case Success(tree, _) => tree
+        case e:NoSuccess =>
+          throw ParserError(e.toString)
+      }
+  
+  def parseTypeExpr(t:String) =
+      phrase(typeExpr)(new lexical.Scanner(t)) match {
+        case Success(t, _) => t
+        case e:NoSuccess =>
+          throw new ParserError(e.toString)
+      }
+  
+  def parseIPromptStmt(s:String) =
+      phrase(iPromptStmt)(new lexical.Scanner(s)) match {
+        case Success(t, _) => t
+        case e:NoSuccess =>
+          throw ParserError(e.toString)
+      }
+  
+  def parseExpr(s:String) =
+      phrase(expr)(new lexical.Scanner(s)) match {
+        case Success(t, _) => t
+        case e:NoSuccess =>
+          throw new ParserError(e.toString)
+      }
+  
+  // LEXICAL INFO
+  
   lexical.delimiters ++= List("+","-","*","/","(",")","[","]","=","=>",":",",",">","<",
                                      ">=","<=","==","!","!=")
   lexical.reserved ++= List("if","then","else","and","or")
@@ -102,38 +132,5 @@ object Parse extends StandardTokenParsers {
                                    case i ~ None => Call(i,Nil) }
   
   def args = "(" ~> repsep(expr,",") <~ ")"
-  
-  // END OF RULES
-  
-  def parse(s:String) = phrase(program)(new lexical.Scanner(s))
-  
-  def parseTypeExpr(t:String) = phrase(typeExpr)(new lexical.Scanner(t)) match {
-    case Success(t, _) => t
-    case e: NoSuccess =>
-      throw new ParserError(e.toString)
-  }
-  
-  def parseIPromptStmt(s:String) = {
-    phrase(iPromptStmt)(new lexical.Scanner(s)) match {
-      case Success(t, _) => t
-      case e: NoSuccess =>
-        throw ParserError(e.toString)
-    }
-  }
-  
-  def parseExpr(s:String) =
-    phrase(expr)(new lexical.Scanner(s)) match {
-      case Success(t, _) => t
-      case e: NoSuccess =>
-        throw new ParserError(e.toString)
-    }
-  
-  def apply(s:String) = {
-    parse(s) match {
-      case Success(tree, _) => tree
-      case e: NoSuccess =>
-        throw ParserError(e.toString)
-    }
-  }
   
 }

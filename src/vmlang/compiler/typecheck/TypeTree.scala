@@ -15,7 +15,7 @@ case class TypeTree(t:Type, subTypes:List[TypeTree]) {
         case es => es
       }
   
-  private def descends(e:String, g:String):Boolean =
+  def descends(e:String, g:String):Boolean =
       this findSubType e match {
         case Some(eTree) => eTree findSubType g match {
           case Some(gTree) => true
@@ -38,16 +38,16 @@ case class TypeTree(t:Type, subTypes:List[TypeTree]) {
       ((a.args zip b.args) map { p => deepestCommonAncestor(p._1, p._2) }) take numArgs)
   }
   
-  private def DCA(a:String, b:String):(String,Int) =
+  def DCA(a:String, b:String):(String,Int) =
       ((path(a) zip path(b)) takeWhile { p => p._1 == p._2 }).last._1
   
-  private def path(tn:String):List[(String,Int)] =
+  def path(tn:String):List[(String,Int)] =
       path(Nil,tn) match {
         case Some(l) => l
         case None => throw new NonexistentType(tn)
       }
   
-  private def path(path:List[(String,Int)], tn:String):Option[List[(String,Int)]] =
+  def path(path:List[(String,Int)], tn:String):Option[List[(String,Int)]] =
       if(tn == t.name)
         Some(path ::: List((t.name,t.numParams)))
       else if(isLeaf)
@@ -59,11 +59,31 @@ case class TypeTree(t:Type, subTypes:List[TypeTree]) {
           case None => None
         }
   
+  def checkCompilableTypeExpr(te:TypeExpr, error:(TypeExpr)=>TypeError):List[TypeError] =
+      findSubType(te.name) match {
+        case Some(TypeTree(t, subTypes)) => t match {
+          case at:AbsType  => if(allAreRefTypes(subTypes)) Nil else List(error(te))
+          case pt:PrimType => Nil
+        }
+        case None => Nil // always called after checkValidTypeExpr
+      }
+  
+  def allAreRefTypes(l:List[TypeTree]):Boolean =
+      l forall { case TypeTree(t, subTypes) => t.isInstanceOf[RefType] && allAreRefTypes(subTypes) }
+  
   def checkValidTypeExpr(te:TypeExpr):List[TypeError] =
       checkExistentAndNumArgs(te.name, te.args.length) :::
               (te.args flatMap { a => checkValidTypeExpr(a) })
   
-  private def checkExistentAndNumArgs(tn:String, numArgs:Int):List[TypeError] =
+  def getSize(te:TypeExpr):Int =
+      find(te.name) match {
+          // can assume that all subtypes of an AbsType will be reference types,
+          // since typechecker checks all arguments and return type specs with checkCompilableTypeExpr
+        case ty:AbsType => 4
+        case ty:ConcreteType => ty.size 
+      }
+  
+  def checkExistentAndNumArgs(tn:String, numArgs:Int):List[TypeError] =
       findSubType(tn) match {
         case None       => List(NonexistentType(tn))
         case Some(tree) => {
@@ -72,7 +92,7 @@ case class TypeTree(t:Type, subTypes:List[TypeTree]) {
         }
       }
   
-  private def findSubType(tn:String):Option[TypeTree] = {
+  def findSubType(tn:String):Option[TypeTree] = {
     if(tn == t.name)
       Some(this)
     else if(isLeaf)

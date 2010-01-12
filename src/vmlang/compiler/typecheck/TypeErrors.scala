@@ -37,3 +37,13 @@ case object NoMainError extends TypeError {
 case class InvalidMainError(te:TypeExpr) extends TypeError {
   val repr = "Function main is " + te + "; must be () => Null"
 }
+
+case class UncompilableTypeSpecError(te:TypeExpr) extends TypeError {
+  val repr = "Return type is " + te +
+               "; must be a primitive type or an abstract type with all reference types as subtypes"
+}
+
+case class UncompilableArgTypeError(te:TypeExpr) extends TypeError {
+  val repr = "Type of argument is " + te +
+               "; must be a primitive type or an abstract type with all reference types as subtypes"
+}
