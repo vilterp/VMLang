@@ -1,0 +1,2 @@
+main:Null = printInt(fib(20))
+fib(n:Int):Int = if n == 0 or n == 1 then 1 else fib(n-1) + fib(n-2)

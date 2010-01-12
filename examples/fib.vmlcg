@@ -1,0 +1,10 @@
+fib	or
+fib	==
+fib	==
+fib	+
+fib	fib
+fib	-
+fib	fib
+fib	-
+main	printInt
+main	fib
