@@ -1,21 +1,21 @@
-// package vmlang.compiler
-// 
-// import java.io.{DataOutputStream, ByteArrayOutputStream}
-// import collection.mutable.HashMap
-// 
-// 
-// import vmlang.common.Opcodes
-// import vmlang.common.Opcodes._
-// import vmlang.compiler.ast._
-// 
-// // shameful imperative code...
-// 
-// object Linearize {
-//   
-//   def apply(prog:List[Def], tt:TypeTree, ft:Map[String,TypeExpr]):Array[Byte] = 
-//       new Linearizer(prog, tt).run
-//   
-// }
+package vmlang.compiler
+
+import java.io.{DataOutputStream, ByteArrayOutputStream}
+import collection.mutable.HashMap
+
+
+import vmlang.common.Opcodes
+import vmlang.common.Opcodes._
+import vmlang.compiler.ast._
+
+// shameful imperative code...
+
+object Linearize {
+  
+  def apply(e:Env):Array[Byte] = 
+      null
+  
+}
 // 
 // class Linearizer(defs:List[Def], tt:TypeTree, ft:Map[String,TypeExpr]) {
 //   

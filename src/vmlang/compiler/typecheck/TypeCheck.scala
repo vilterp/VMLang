@@ -44,117 +44,86 @@ object TypeCheck {
     ("printInt"     ,      "(Int) => Null"        )
   ) map { tp => (tp._1, Parse.parseTypeExpr(tp._2)) })
   
-  def apply(defs:List[Def]):Env =
-      apply(defs, rootFuncTypes, typeTree)
-  
-  def apply(defs:List[Def], ft:FuncTable, tt:TypeTree):Env = {
-    val (ds, dupErrors) = checkForDuplicates(defs)
-    val allFuncs = addTypeSigs(ft, defs)
-    (dupErrors ::: checkForValidMain(ds) ::: checkCompliance(ds, allFuncs, tt)) match {
-      case Nil =>
-          val defs = Map[String,Def]() ++ (ds map { d => (d.name, d) })
-          Env(defs, allFuncs, tt)
-      case es  => throw new TypeErrors(es.removeDuplicates)
-    }
-  }
-  
-  def checkForDuplicates(defs:List[Def]):(List[Def], List[TypeError]) = {
-      val (nonDups, dups) = checkForDuplicates(Nil, defs)
-      (nonDups, dups map { d => DuplicateDefError(d.name) })
-  }
-  
-  def checkForDuplicates(alreadyDefined:List[Def], defs:List[Def]):(List[Def], List[Def]) =
-      defs match {
-        case Nil           => (alreadyDefined, Nil)
-        case first :: rest => {
-          if(alreadyDefined exists { _.name == first.name }) {
-            val (restNonDups, restDups) = checkForDuplicates(alreadyDefined, rest)
-            (restNonDups, first :: restDups)
-          } else {
-            checkForDuplicates(first :: alreadyDefined, rest)
-          }
-        }
+  def apply(e:Env):Env =
+      (checkForValidMain(e) ::: checkCompliance(e)) match {
+        case Nil => e
+        case es  => throw new TypeErrors(es.removeDuplicates)
       }
   
-  def checkForValidMain(defs:List[Def]):List[TypeError] =
+  def checkForValidMain(e:Env):List[TypeError] =
       // check that main exists and is () => Null
-      (defs find { _.name == "main" }) match {
-        case Some(d) => (d.returnType == TypeExpr("Null",Nil) && d.params == Nil) match {
+      (e.defs get "main") match {
+        case Some(d) => (d.returnType == TypeExpr("Null", Nil) && d.params == Nil) match {
           case true  => Nil
-          case false => List(InvalidMainError(mkFuncTypeExpr(d)))
+          case false => List(InvalidMainError(d.typeExpr))
         }
         case None => List(NoMainError)
       }
   
-  def addTypeSigs(ft:FuncTable, defs:List[Def]):FuncTable =
-      defs.foldLeft(ft){ (ft, d) => ft + (d.name -> mkFuncTypeExpr(d)) }
+  def checkCompliance(e:Env):List[TypeError] =
+      e.defs.toList flatMap { case (name, d) => checkDef(d, e) }
   
-  def mkFuncTypeExpr(d:Def):TypeExpr =
-      TypeExpr("Function" + d.params.length, (d.params map { _.argType }) ::: List(d.returnType))
-  
-  def checkCompliance(defs:List[Def], ft:FuncTable, tt:TypeTree):List[TypeError] =
-      defs flatMap { d => checkDef(d, ft, tt) }
-  
-  def checkDef(d:Def, ft:FuncTable, tt:TypeTree):List[TypeError] = {
+  def checkDef(d:Def, e:Env):List[TypeError] = {
     val scope = Map() ++ (d.params map { ps => (ps.name, ps.argType) })
-    (d.params flatMap { ps => tt.checkValidTypeExpr(ps.argType) }) :::
-      (tt.checkValidTypeExpr(d.returnType)) :::
-        (tt.checkCompilableTypeExpr(d.returnType, { te => UncompilableTypeSpecError(te) })) :::
-          (checkCalls(d.body, scope, ft, tt) match {
-            case Nil => tt.complies(d.returnType, inferType(d.body, scope, ft, tt))
+    (d.params flatMap { ps => e.tt.checkValidTypeExpr(ps.argType) }) :::
+      (e.tt.checkValidTypeExpr(d.returnType)) :::
+        (e.tt.checkCompilableTypeExpr(d.returnType, { te => UncompilableTypeSpecError(te) })) :::
+          (checkCalls(d.body, scope, e) match {
+            case Nil => e.tt.complies(d.returnType, inferType(d.body, scope, e))
             case l   => l
           })
   }
   
-  def checkCalls(e:Expr, s:Scope, ft:FuncTable, tt:TypeTree):List[TypeError] =
-      e match {
-        case a:Atom          => Nil
-        case IfExpr(i, c, e) => checkCalls(List(i, c, e), s, ft, tt)
-        case c:Call          => checkCall(c, s, ft, tt)
+  def checkCalls(ex:Expr, s:Scope, e:Env):List[TypeError] =
+      ex match {
+        case a:Atom              => Nil
+        case IfExpr(cond, i, el) => checkCalls(List(cond, i, el), s, e)
+        case c:Call              => checkCall(c, s, e)
       }
     
-  def checkCalls(es:List[Expr], s:Scope, ft:FuncTable, tt:TypeTree):List[TypeError] =
-      es flatMap { e => checkCalls(e, s, ft, tt) }
+  def checkCalls(exprs:List[Expr], s:Scope, e:Env):List[TypeError] =
+      exprs flatMap { expr => checkCalls(expr, s, e) }
   
-  def checkCall(call:Call, scope:Scope, ft:FuncTable, tt:TypeTree):List[TypeError] = {
+  def checkCall(call:Call, scope:Scope, e:Env):List[TypeError] = {
     val giv = call.args
     (scope get call.name) match {
       case Some(_) => Nil
-      case None    => (ft get call.name) match {
+      case None    => (e.ft get call.name) match {
         case Some(funcType) => {
           val exp = funcType.args.init
           (if(exp.length == giv.length)
             Nil
           else
             List(WrongNumCallArgs(call.name, exp.length, giv.length))) :::
-                                                checkArgCompliance(exp, giv, scope, ft, tt)
+                                                checkArgCompliance(exp, giv, scope, e)
         }
-        case None => NonexistentFuncError(call.name) :: checkCalls(call.args, scope, ft, tt)
+        case None => NonexistentFuncError(call.name) :: checkCalls(call.args, scope, e)
       }
     }
   }
   
-  def checkArgCompliance(expTypes:List[TypeExpr], args:List[Expr],
-                                        s:Scope, ft:FuncTable, tt:TypeTree):List[TypeError] =
-      checkCalls(args.dropRight(expTypes.length - args.length), s, ft, tt) :::
-      ((expTypes zip args) flatMap { case (et, e) => checkCalls(e, s, ft, tt) match {
+  def checkArgCompliance(expTypes:List[TypeExpr], args:List[Expr], s:Scope, e:Env):List[TypeError] =
+      checkCalls(args.dropRight(expTypes.length - args.length), s, e) :::
+      ((expTypes zip args) flatMap { case (ext, ex) => checkCalls(ex, s, e) match {
         case Nil =>
-            val inferredTypeExpr = inferType(e, s, ft, tt)
-            tt.complies(et, inferredTypeExpr) :::
-              tt.checkCompilableTypeExpr(inferredTypeExpr, { te => UncompilableArgTypeError(te) })
+            val inferredTypeExpr = inferType(ex, s, e)
+            e.tt.complies(ext, inferredTypeExpr) :::
+              e.tt.checkCompilableTypeExpr(inferredTypeExpr, { te => UncompilableArgTypeError(te) })
         case l   => l
       } })
   
-  def inferType(expr:Expr, s:Scope, ft:FuncTable, tt:TypeTree):TypeExpr = {
-    expr match {
-      case IntLit(_)       => TypeExpr("Int",Nil)
-      case CharLit(_)      => TypeExpr("Char",Nil)
-      case FloatLit(_)     => TypeExpr("Float",Nil)
-      case IfExpr(_, i, t) => tt.deepestCommonAncestor(inferType(i, s, ft, tt),
-                                                       inferType(t, s, ft, tt))
-      case c:Call          => if(isParam(c, s)) s(c.name) else ft(c.name).args.last
-    }
-  }
+  def inferType(expr:Expr, e:Env):TypeExpr =
+      inferType(expr, Map[String,TypeExpr](), e)
+  
+  def inferType(expr:Expr, s:Scope, e:Env):TypeExpr =
+      expr match {
+        case IntLit(_)       => TypeExpr("Int",Nil)
+        case CharLit(_)      => TypeExpr("Char",Nil)
+        case FloatLit(_)     => TypeExpr("Float",Nil)
+        case IfExpr(_, i, t) => e.tt.deepestCommonAncestor(inferType(i, s, e),
+                                                         inferType(t, s, e))
+        case c:Call          => if(isParam(c, s)) s(c.name) else e.ft(c.name).args.last
+      }
   
   def isParam(call:Call, scope:Scope):Boolean =
       call.args.isEmpty && (scope isDefinedAt call.name)

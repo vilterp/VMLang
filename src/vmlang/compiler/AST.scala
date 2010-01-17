@@ -15,11 +15,13 @@ case class TypeExpr(name:String, args:List[TypeExpr]) extends ASTNode {
   val repr = if(isFunctionType) toString else name
 }
 
-abstract class IPromptStmt extends ASTNode
+abstract class REPLStmt extends ASTNode
 
-case class Def(name:String, params:List[ParamSpec], returnType:TypeExpr, body:Expr) extends IPromptStmt
+case class Def(name:String, params:List[ParamSpec], returnType:TypeExpr, body:Expr) extends REPLStmt {
+  val typeExpr = TypeExpr("Function" + params.length, (params map { _.argType }) ::: List(returnType))
+}
 
-abstract class Expr extends IPromptStmt
+abstract class Expr extends REPLStmt
 
 case class IfExpr(condition:Expr, ifExpr:Expr, thenExpr:Expr) extends Expr
 case class Call(name:String, args:List[Expr]) extends Expr

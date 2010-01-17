@@ -29,8 +29,8 @@ object Parse extends StandardTokenParsers {
           throw new ParserError(e.toString)
       }
   
-  def parseIPromptStmt(s:String) =
-      phrase(iPromptStmt)(new lexical.Scanner(s)) match {
+  def parseREPLStmt(s:String) =
+      phrase(REPLStmt)(new lexical.Scanner(s)) match {
         case Success(t, _) => t
         case e:NoSuccess =>
           throw ParserError(e.toString)
@@ -53,7 +53,7 @@ object Parse extends StandardTokenParsers {
   
   def program = definition +
   
-  def iPromptStmt = ( definition | expr )
+  def REPLStmt = ( definition | expr )
   
   def definition = ident ~ (paramsSpec?) ~ typeSpec ~ ("=" ~> expr) ^^ {
                                     case i ~ Some(ps) ~ rt ~ e => Def(i, checkPs(ps), rt, e)
