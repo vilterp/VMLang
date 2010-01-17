@@ -28,12 +28,13 @@ object Main extends OptParser {
         addr += 1
         print(oc + "\t")
         oc match {
-          case I_CONST_A => print(in.readInt); addr += 4
-          case I_CONST_B => print(in.readInt); addr += 4
-          case B_CONST_A => print(in.readByte); addr += 1
-          case B_CONST_B => print(in.readByte); addr += 1
-          case GOTO      => print(in.readInt); addr += 4
-          case _         =>
+          case I_CONST_A     => print(in.readInt); addr += 4
+          case I_CONST_B     => print(in.readInt); addr += 4
+          case B_CONST_A     => print(in.readByte); addr += 1
+          case B_CONST_B     => print(in.readByte); addr += 1
+          case GOTO          => print(in.readInt); addr += 4
+          case GOTO_IF_NOT_A => print(in.readInt); addr += 4
+          case _             =>
         }
         println
       }

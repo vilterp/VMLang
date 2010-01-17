@@ -62,90 +62,224 @@ public class VM {
 				case GOTO_A:
 					counter = A;
 					break;
-				// conditional jumps: based on post-SUB state of register A
-				case IF_EQ:
-					nextAddr = progReadInt();
-					if(A != 0)
-						counter = nextAddr;
+				case GOTO_SP:
+					counter = memReadInt(SP);
 					break;
-				case IF_LT:
+				case GOTO_IF_NOT_A:
 					nextAddr = progReadInt();
-					if(A >= 0)
+					if(A == 0)
 						counter = nextAddr;
 					break;
 
 				// LOAD & STORE (Von-Neumann bottleneck)
 
-				// int constants
+				// constants
+				
 				case I_CONST_A:
 					A = progReadInt();
 					break;
 				case I_CONST_B:
 					B = progReadInt();
 					break;
-				// byte constants
 				case B_CONST_A:
 					A = progReadByte();
 					break;
 				case B_CONST_B:
 					B = progReadByte();
 					break;
-				// load int
+				
+				// load
+				
+				case I_LOAD_A_B:
+				  B = memReadInt(A);
+				  break;
 				case I_LOAD_A_SP:
-					A = memReadInt(SP);
-					break;
-				case I_LOAD_A_A:
-					A = memReadInt(A);
-					break;
-				case I_LOAD_FP_SP:
-					FP = memReadInt(SP);
-					break;
+				  SP = memReadInt(A);
+				  break;
+				case I_LOAD_A_FP:
+				  FP = memReadInt(A);
+				  break;
+				case I_LOAD_B_A:
+				  A = memReadInt(B);
+				  break;
 				case I_LOAD_B_SP:
-					B = memReadInt(SP);
-					break;
-				case I_LOAD_SP_SP:
-					SP = memReadInt(SP);
-					break;
-				// load byte
+				  SP = memReadInt(B);
+				  break;
+				case I_LOAD_B_FP:
+				  FP = memReadInt(B);
+				  break;
+				case I_LOAD_SP_A:
+				  A = memReadInt(SP);
+				  break;
+				case I_LOAD_SP_B:
+				  B = memReadInt(SP);
+				  break;
+				case I_LOAD_SP_FP:
+				  FP = memReadInt(SP);
+				  break;
+				case I_LOAD_FP_A:
+				  A = memReadInt(FP);
+				  break;
+				case I_LOAD_FP_B:
+				  B = memReadInt(FP);
+				  break;
+				case I_LOAD_FP_SP:
+				  SP = memReadInt(FP);
+				  break;
+				case B_LOAD_A_B:
+				  B = memReadByte(A);
+				  break;
 				case B_LOAD_A_SP:
-					A = memReadByte(SP);
-					break;
-				case B_LOAD_A_A:
-					A = memReadByte(A);
-					break;
+				  SP = memReadByte(A);
+				  break;
+				case B_LOAD_A_FP:
+				  FP = memReadByte(A);
+				  break;
+				case B_LOAD_B_A:
+				  A = memReadByte(B);
+				  break;
 				case B_LOAD_B_SP:
-					B = memReadByte(SP);
-					break;
-				// store int
+				  SP = memReadByte(B);
+				  break;
+				case B_LOAD_B_FP:
+				  FP = memReadByte(B);
+				  break;
+				case B_LOAD_SP_A:
+				  A = memReadByte(SP);
+				  break;
+				case B_LOAD_SP_B:
+				  B = memReadByte(SP);
+				  break;
+				case B_LOAD_SP_FP:
+				  FP = memReadByte(SP);
+				  break;
+				case B_LOAD_FP_A:
+				  A = memReadByte(FP);
+				  break;
+				case B_LOAD_FP_B:
+				  B = memReadByte(FP);
+				  break;
+				case B_LOAD_FP_SP:
+				  SP = memReadByte(FP);
+				  break;
+				
+				
+				// store
+				
+				case I_STORE_A_B:
+				  memWriteInt(B,A);
+				  break;
 				case I_STORE_A_SP:
-					memWriteInt(SP,A);
-					break;
+				  memWriteInt(SP,A);
+				  break;
+				case I_STORE_A_FP:
+				  memWriteInt(FP,A);
+				  break;
+				case I_STORE_B_A:
+				  memWriteInt(A,B);
+				  break;
+				case I_STORE_B_SP:
+				  memWriteInt(SP,B);
+				  break;
+				case I_STORE_B_FP:
+				  memWriteInt(FP,B);
+				  break;
+				case I_STORE_SP_A:
+				  memWriteInt(A,SP);
+				  break;
+				case I_STORE_SP_B:
+				  memWriteInt(B,SP);
+				  break;
+				case I_STORE_SP_FP:
+				  memWriteInt(FP,SP);
+				  break;
+				case I_STORE_FP_A:
+				  memWriteInt(A,FP);
+				  break;
+				case I_STORE_FP_B:
+				  memWriteInt(B,FP);
+				  break;
 				case I_STORE_FP_SP:
-					memWriteInt(SP,FP);
-					break;
-				// store byte
+				  memWriteInt(SP,FP);
+				  break;
+				case B_STORE_A_B:
+				  memWriteByte(B,(byte)A);
+				  break;
 				case B_STORE_A_SP:
-					memWriteByte(SP,(byte)A);
-					break;
+				  memWriteByte(SP,(byte)A);
+				  break;
+				case B_STORE_A_FP:
+				  memWriteByte(FP,(byte)A);
+				  break;
+				case B_STORE_B_A:
+				  memWriteByte(A,(byte)B);
+				  break;
+				case B_STORE_B_SP:
+				  memWriteByte(SP,(byte)B);
+				  break;
+				case B_STORE_B_FP:
+				  memWriteByte(FP,(byte)B);
+				  break;
+				case B_STORE_SP_A:
+				  memWriteByte(A,(byte)SP);
+				  break;
+				case B_STORE_SP_B:
+				  memWriteByte(B,(byte)SP);
+				  break;
+				case B_STORE_SP_FP:
+				  memWriteByte(FP,(byte)SP);
+				  break;
+				case B_STORE_FP_A:
+				  memWriteByte(A,(byte)FP);
+				  break;
+				case B_STORE_FP_B:
+				  memWriteByte(B,(byte)FP);
+				  break;
+				case B_STORE_FP_SP:
+				  memWriteByte(SP,(byte)FP);
+				  break;
+				
 				// moves
+				
 				case MOVE_COUNTER_A:
 					A = counter;
 					break;
-				case MOVE_SP_A:
-					A = SP;
-					break;
-				case MOVE_FP_A:
-					A = FP;
-					break;
+				case MOVE_A_B:
+				  B = A;
+				  break;
 				case MOVE_A_SP:
-					SP = A;
-					break;
+				  SP = A;
+				  break;
 				case MOVE_A_FP:
-					FP = A;
-					break;
+				  FP = A;
+				  break;
+				case MOVE_B_A:
+				  A = B;
+				  break;
+				case MOVE_B_SP:
+				  SP = B;
+				  break;
+				case MOVE_B_FP:
+				  FP = B;
+				  break;
+				case MOVE_SP_A:
+				  A = SP;
+				  break;
+				case MOVE_SP_B:
+				  B = SP;
+				  break;
 				case MOVE_SP_FP:
-					FP = SP;
-					break;
+				  FP = SP;
+				  break;
+				case MOVE_FP_A:
+				  A = FP;
+				  break;
+				case MOVE_FP_B:
+				  B = FP;
+				  break;
+				case MOVE_FP_SP:
+				  SP = FP;
+				  break;
 
 				// REGISTER OPERATIONS
 
