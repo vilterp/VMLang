@@ -100,6 +100,7 @@ class Linearizer(e:Env) {
     case IfExpr(c, i, e) => {
         // write condition
         wExpr(c, s)
+        wPopByteA
         // write conditional goto
         val condGotoInd = out.length
         w(GOTO_IF_NOT_A, 0)
@@ -179,7 +180,7 @@ class Linearizer(e:Env) {
   
   def cmpOp(a:Expr, b:Expr, s:Scope, cmp:()=>Unit) = {
       println("cmpOp: a: " + a + " b: " + b + " s: " + s)
-      intOpNoPush(a, b, s, () => { println("hello from cmpOp's anon func"); w(I_SUB); cmp(); })
+      intOpNoPush(a, b, s, () => { println("hello from cmpOp's anon func"); w(I_SUB); cmp(); wPushByte() })
   }
   
   def intOp(a:Expr, b:Expr, s:Scope, ops:()=>Unit) = {
