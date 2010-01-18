@@ -34,7 +34,7 @@ case class RootDefError(name:String) extends TypeError {
   val repr = "\"" + name + "\" is a root function; cannot be redefined."
 }
 
-case object NoMainError extends TypeError {
+case class NoMainError extends TypeError {
   val repr = "No main function. (Must be () => Null)"
 }
 

@@ -10,32 +10,34 @@ object Simplify {
   type FuncTable = Map[String,TypeExpr]
   
   def apply(env:Env):Env =
-      Env(inlineAll(simplifyAll(env.defs), Set() ++ env.ft.keySet.toList -- env.defs.keySet.toList),
-        env.ft, env.tt)
+      Env(inlineAll(simplifyAll(env.defs), Set() ++ env.roots.keySet.toList -- env.defs.keySet.toList),
+        env.roots, env.tt)
   
   def simplifyAll(defs:DefMap) =
-      applyToAllDefs(defs, simplify _)
+      applyToAllDefs(defs, { d => simplify(d.body) })
   
   def inlineAll(defs:DefMap, rootNames:Set[String]) =
       Map[String,Def]() ++
-        (applyToAllDefs(defs, { e => inline(e,defs,rootNames) }) filter {
+        (applyToAllDefs(defs, { d => inline(d.body,d.params map { ps => ps.name },defs,rootNames) }) filter {
           case (_, d) => !d.body.isInstanceOf[Atom] })
   
-  def applyToAllDefs(defs:DefMap, f:(Expr) => Expr):DefMap =
-      Map[String,Def]() ++ (defs map { case (na, Def(n, ps, rt, b)) => (na, Def(n, ps, rt, f(b))) })
+  def applyToAllDefs(defs:DefMap, f:(Def) => Expr):DefMap =
+      Map[String,Def]() ++ (defs map { case (na, d:Def) =>
+                            (na, Def(d.name, d.params, d.returnType, f(d))) })
   
-  def inline(e:Expr, defs:DefMap, rootNames:Set[String]):Expr =
+  def inline(e:Expr, s:List[String], defs:DefMap, rootNames:Set[String]):Expr =
       e match {
         case a:Atom => a
         case IfExpr(c, i, e) =>
-            IfExpr(inline(c, defs, rootNames), inline(c, defs, rootNames), inline(c, defs, rootNames))
+            IfExpr(inline(c, s, defs, rootNames),
+                    inline(c, s, defs, rootNames), inline(c, s, defs, rootNames))
         case Call(name, args) =>
-          if(rootNames contains name)
-            Call(name, args map { e => inline(e, defs, rootNames) })
+          if((rootNames contains name) || (s contains name))
+            Call(name, args map { e => inline(e, s, defs, rootNames) })
           else
             defs(name).body match {
               case a:Atom => a
-              case _      => Call(name, args map { e => inline(e, defs, rootNames) })
+              case _      => Call(name, args map { e => inline(e, s, defs, rootNames) })
             }
       }
   

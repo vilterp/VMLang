@@ -34,6 +34,7 @@ object Main extends OptParser {
           case B_CONST_B     => print(in.readByte); addr += 1
           case GOTO          => print(in.readInt); addr += 4
           case GOTO_IF_NOT_A => print(in.readInt); addr += 4
+          case DEC_SP_BY     => print(in.readInt); addr += 4
           case _             =>
         }
         println

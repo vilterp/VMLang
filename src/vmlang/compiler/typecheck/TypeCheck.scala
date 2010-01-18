@@ -57,7 +57,7 @@ object TypeCheck {
           case true  => Nil
           case false => List(InvalidMainError(d.typeExpr))
         }
-        case None => List(NoMainError)
+        case None => List(NoMainError())
       }
   
   def checkCompliance(e:Env):List[TypeError] =
@@ -113,7 +113,10 @@ object TypeCheck {
       } })
   
   def inferType(expr:Expr, e:Env):TypeExpr =
-      inferType(expr, Map[String,TypeExpr](), e)
+      checkCalls(expr, Map[String,TypeExpr](), e) match {
+        case Nil => inferType(expr, Map[String,TypeExpr](), e)
+        case es  => throw TypeErrors(es)
+      }
   
   def inferType(expr:Expr, s:Scope, e:Env):TypeExpr =
       expr match {

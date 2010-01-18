@@ -22,6 +22,7 @@ public enum Opcodes {
 	I_LOAD_A_B,
 	I_LOAD_A_SP,
 	I_LOAD_A_FP,
+	I_LOAD_A_A,
 	I_LOAD_B_A,
 	I_LOAD_B_SP,
 	I_LOAD_B_FP,
@@ -103,6 +104,7 @@ public enum Opcodes {
 	DEC_B,
 	DEC_SP,
 	DEC_SP_INT,
+	DEC_SP_BY,
 	
 	NEG_A,
 	EQ_A,

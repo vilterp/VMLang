@@ -8,7 +8,11 @@ case class Env(defs:Map[String,Def], roots:Map[String,TypeExpr], tt:TypeTree) {
   lazy val ft = defs.foldLeft(roots){ (ft, d) => ft + (d._2.name -> d._2.typeExpr) }
   
   // for REPL only
-  def addDef(d:Def) = Env(defs + (d.name -> d), roots, tt)
+  def addDef(d:Def) =
+      if(roots contains d.name)
+        throw RootDefError(d.name)
+      else
+        Env(defs + (d.name -> d), roots, tt)
   
 }
 

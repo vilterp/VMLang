@@ -22,14 +22,15 @@ public class VM {
 	private PrintStream out;
 	
 	private int stackStart;
+	boolean debug;
 	
 	private static final Opcodes[] opcodes = Opcodes.values(); // inefficient? 
 	
-	public VM(byte[] prog, int heapSize, int stackSize) throws InitError {
-		this(prog, heapSize, stackSize, System.in, System.out);
+	public VM(byte[] prog, int heapSize, int stackSize, boolean d) throws InitError {
+		this(prog, heapSize, stackSize, System.in, System.out, d);
 	}
 	
-	public VM(byte[] prog, int heapSize, int stackSize, InputStream is, PrintStream os)
+	public VM(byte[] prog, int heapSize, int stackSize, InputStream is, PrintStream os, boolean d)
 	 																																				throws InitError {
 		if(heapSize % 8 != 0)
 			throw new InitError("Heap size must be divisible by 8 (for malloc)");
@@ -38,6 +39,7 @@ public class VM {
 		stackStart = heapSize;
 		in = is;
 		out = os;
+		debug = d;
 	}
 	
 	public void run() throws VMError {
@@ -49,6 +51,8 @@ public class VM {
 			} catch(ArrayIndexOutOfBoundsException e) {
 				throw getMalfProgEx();
 			}
+			if(debug)
+				System.out.print(opcode);
 			switch(opcode) {
 
 				// FLOW CONTROL
@@ -99,6 +103,9 @@ public class VM {
 				case I_LOAD_A_FP:
 				  FP = memReadInt(A);
 				  break;
+				case I_LOAD_A_A:
+					A = memReadInt(A);
+					break;
 				case I_LOAD_B_A:
 				  A = memReadInt(B);
 				  break;
@@ -340,6 +347,9 @@ public class VM {
 				case DEC_SP_INT:
 					SP -= 4;
 					break;
+				case DEC_SP_BY:
+					SP -= progReadInt();
+					break;
 				// logic (0: false; non-0: true)
 				case NEG_A:
 					if(A == 0)
@@ -397,6 +407,8 @@ public class VM {
 					}
 					break;
 			}
+			if(debug)
+				System.out.println(" => [A: "+A+" B: "+ B+" FP: " + FP + " SP: " + SP + "]");
 		}
 	}
 	

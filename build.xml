@@ -40,4 +40,8 @@
 		</scalac>
 	</target>
 	
+	<target name="make_jar" depends="compile_everything">
+	   <jar basedir="${build.dir}" destfile="vmlang.jar"/>
+	</target>
+	
 </project>

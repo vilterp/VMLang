@@ -23,7 +23,5 @@ Linearizer
 
 INTERACTIVE PROMPT
 
-- ":t <expr>" doesn't take user-defined functions into account
-- defining a function yields "No main function. (Must be () => Null)"
-- ":t myFunction" should give myFunction's type signature, not parse it as an expression
-- should save expressions typed in as "res{n}"
+- can't define recursive functions, because it says the function you're defining doesn't exist
+  - fix: add function's type sig to env before checking
