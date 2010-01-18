@@ -1,0 +1,130 @@
+  STACK_START
+  MOVE_A_SP
+  MOVE_A_FP
+wExpr: Call(main,List()) s: List()
+call prelude
+  MOVE_FP_A
+  I_STORE_A_SP
+  MOVE_SP_FP
+  INC_SP_INT
+  I_CONST_A
+  I_STORE_A_SP
+  INC_SP_INT
+  GOTO
+call postlude
+  DEC_SP_INT
+  I_LOAD_SP_FP
+  DEC_SP_BY
+  STOP
+wExpr: Call(printInt,List(Call(fac,List(IntLit(5))))) s: List()
+wExpr: Call(fac,List(IntLit(5))) s: List()
+wExpr: IntLit(5) s: List()
+  I_CONST_A
+  I_STORE_A_SP
+  INC_SP_INT
+call prelude
+  MOVE_FP_A
+  I_STORE_A_SP
+  MOVE_SP_FP
+  INC_SP_INT
+  I_CONST_A
+  I_STORE_A_SP
+  INC_SP_INT
+  GOTO
+call postlude
+  DEC_SP_INT
+  I_LOAD_SP_FP
+  DEC_SP_BY
+  I_STORE_A_SP
+  INC_SP_INT
+  DEC_SP_INT
+  I_LOAD_SP_A
+  PRINT_INT_A
+def postlude
+  DEC_SP_INT
+  GOTO_SP
+wExpr: IfExpr(Call(==,List(Call(n,List()), IntLit(1))),IntLit(1),Call(*,List(Call(n,List()), Call(fac,List(Call(-,List(Call(n,List()), IntLit(1)))))))) s: List((n,4))
+wExpr: Call(==,List(Call(n,List()), IntLit(1))) s: List((n,4))
+cmpOp: a: Call(n,List()) b: IntLit(1) s: List((n,4))
+intOpNoPush a: Call(n,List()) b: IntLit(1) s: List((n,4))
+wExpr: Call(n,List()) s: List((n,4))
+  MOVE_FP_A
+  I_CONST_B
+  I_SUB
+  I_LOAD_A_A
+  I_STORE_A_SP
+  INC_SP_INT
+wExpr: IntLit(1) s: List((n,4))
+  I_CONST_A
+  I_STORE_A_SP
+  INC_SP_INT
+  DEC_SP_INT
+  I_LOAD_SP_B
+  DEC_SP_INT
+  I_LOAD_SP_A
+hello from cmpOp's anon func
+  I_SUB
+hello from =='s anon func
+  EQ_A
+  GOTO_IF_NOT_A
+wExpr: IntLit(1) s: List((n,4))
+  I_CONST_A
+  I_STORE_A_SP
+  INC_SP_INT
+  GOTO
+wExpr: Call(*,List(Call(n,List()), Call(fac,List(Call(-,List(Call(n,List()), IntLit(1))))))) s: List((n,4))
+intOpNoPush a: Call(n,List()) b: Call(fac,List(Call(-,List(Call(n,List()), IntLit(1))))) s: List((n,4))
+wExpr: Call(n,List()) s: List((n,4))
+  MOVE_FP_A
+  I_CONST_B
+  I_SUB
+  I_LOAD_A_A
+  I_STORE_A_SP
+  INC_SP_INT
+wExpr: Call(fac,List(Call(-,List(Call(n,List()), IntLit(1))))) s: List((n,4))
+wExpr: Call(-,List(Call(n,List()), IntLit(1))) s: List((n,4))
+intOpNoPush a: Call(n,List()) b: IntLit(1) s: List((n,4))
+wExpr: Call(n,List()) s: List((n,4))
+  MOVE_FP_A
+  I_CONST_B
+  I_SUB
+  I_LOAD_A_A
+  I_STORE_A_SP
+  INC_SP_INT
+wExpr: IntLit(1) s: List((n,4))
+  I_CONST_A
+  I_STORE_A_SP
+  INC_SP_INT
+  DEC_SP_INT
+  I_LOAD_SP_B
+  DEC_SP_INT
+  I_LOAD_SP_A
+  I_SUB
+  I_STORE_A_SP
+  INC_SP_INT
+call prelude
+  MOVE_FP_A
+  I_STORE_A_SP
+  MOVE_SP_FP
+  INC_SP_INT
+  I_CONST_A
+  I_STORE_A_SP
+  INC_SP_INT
+  GOTO
+call postlude
+  DEC_SP_INT
+  I_LOAD_SP_FP
+  DEC_SP_BY
+  I_STORE_A_SP
+  INC_SP_INT
+  DEC_SP_INT
+  I_LOAD_SP_B
+  DEC_SP_INT
+  I_LOAD_SP_A
+  I_MUL
+  I_STORE_A_SP
+  INC_SP_INT
+def postlude
+  DEC_SP_INT
+  DEC_SP_INT
+  GOTO_SP

@@ -17,11 +17,9 @@ Parser
 
 Linearizer
 
-  - function calls don't work
   - if statements aren't implemented
   - uses Type#size to compute instructions, but defs that take parameters with abstract types don't know what they will be called with! this computation must take place on a per-call basis, when argument types are known (note this makes CheckedDef useless)
 
-INTERACTIVE PROMPT
+Simplifier
 
-- can't define recursive functions, because it says the function you're defining doesn't exist
-  - fix: add function's type sig to env before checking
+  - turns definition of fac into IfExpr(Call(==,List(Call(n,List()), IntLit(1))),Call(==,List(Call(n,List()), IntLit(1))),Call(==,List(Call(n,List()), IntLit(1))))

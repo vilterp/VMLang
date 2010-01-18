@@ -6,7 +6,7 @@ object Compile {
   
   def apply(prog:String):Array[Byte] =
       Linearize(
-        Simplify(
+//        Simplify(
           TypeCheck(
             MakeEnv(
               Parse(prog),
@@ -14,7 +14,7 @@ object Compile {
               TypeCheck.typeTree
             )
           )
-        )
+//        )
       )
   
 }

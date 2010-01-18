@@ -49,15 +49,12 @@ class Linearizer(e:Env) {
     for((ind, ref) <- refs) {
       val refInd = startingPoints(ref)
       // write program index (integer) to result array
-      out(ind+1) = (0xff & (refInd >> 24)).asInstanceOf[Byte]
-      out(ind+2) = (0xff & (refInd >> 16)).asInstanceOf[Byte]
-      out(ind+3) = (0xff & (refInd >> 8)).asInstanceOf[Byte]
-      out(ind+4) = (0xff & refInd).asInstanceOf[Byte]
+      overWriteInt(ind + 1, refInd)
     }
     out.toArray
   }
   
-  def wExpr(e:Expr, s:Scope):Unit = e match {
+  def wExpr(e:Expr, s:Scope):Unit = { println("wExpr: " + e + " s: " + s); e match {
     
     case IntLit(i)   => w(I_CONST_A, i); wPushInt
     case CharLit(c)  => w(B_CONST_A, c.toByte); wPushByte
@@ -69,7 +66,7 @@ class Linearizer(e:Env) {
     case Call("/", List(a, b)) => intOp(a, b, s, ()=>{ w(I_DIV) })
     case Call("%", List(a, b)) => intOp(a, b, s, ()=>{ w(I_MOD) })
     
-    case Call("==", List(a, b))  => cmpOp(a, b, s, ()=>{ w(EQ_A) })
+    case Call("==", List(a, b))  => cmpOp(a, b, s, ()=>{ println("hello from =='s anon func"); w(EQ_A); })
     case Call(">" , List(a, b))  => cmpOp(a, b, s, ()=>{ w(GT_A) })
     case Call("<" , List(a, b))  => cmpOp(a, b, s, ()=>{ w(LT_A) })
     case Call(">=", List(a, b))  => cmpOp(a, b, s, ()=>{ w(LT_A); w(NEG_A) })
@@ -100,7 +97,27 @@ class Linearizer(e:Env) {
           wCallPostlude(scopes(name).foldLeft(0){ _ + _._2 }, rtSizes(name)) // retrieve returned value
     }
     
-  }
+    case IfExpr(c, i, e) => {
+        // write condition
+        wExpr(c, s)
+        // write conditional goto
+        val condGotoInd = out.length
+        w(GOTO_IF_NOT_A, 0)
+        // write if expr
+        wExpr(i, s)
+        // write goto to after end of else expr
+        val ifGotoInd = out.length
+        w(GOTO, 0)
+        // write else expr
+        wExpr(e, s)
+        val afterElseInd = out.length
+        // overwrite conditional goto addr
+        overWriteInt(condGotoInd + 1, ifGotoInd + 5)
+        // overwrite after-if goto addr
+        overWriteInt(ifGotoInd + 1, afterElseInd)
+    }
+    
+  } }
   
   def argOffset(name:String, scope:Scope):Option[Int] =
       (scope findIndexOf { _._1 == name }) match {
@@ -109,6 +126,7 @@ class Linearizer(e:Env) {
       }
   
   def wCallPrelude = {
+    println("call prelude")
     // push base pointer
     w(MOVE_FP_A)
     w(I_STORE_A_SP)
@@ -127,6 +145,7 @@ class Linearizer(e:Env) {
   }
   
   def wDefPostlude(rtSize:Int) = {
+    println("def postlude")
     // decrement SP to point at return value
     for(i <- (1 to (rtSize / 4)))
       w(DEC_SP_INT)
@@ -139,6 +158,7 @@ class Linearizer(e:Env) {
   }
   
   def wCallPostlude(argSize:Int, rtSize:Int) = {
+    println("call postlude")
     // dec sp to stored fp
     w(DEC_SP_INT)
     // load stored fp into fp
@@ -157,8 +177,10 @@ class Linearizer(e:Env) {
         // this should never be thrown...
   }
   
-  def cmpOp(a:Expr, b:Expr, s:Scope, cmp:()=>Unit) =
-      intOp(a, b, s, { w(I_SUB); cmp(); wPushByte })
+  def cmpOp(a:Expr, b:Expr, s:Scope, cmp:()=>Unit) = {
+      println("cmpOp: a: " + a + " b: " + b + " s: " + s)
+      intOpNoPush(a, b, s, () => { println("hello from cmpOp's anon func"); w(I_SUB); cmp(); })
+  }
   
   def intOp(a:Expr, b:Expr, s:Scope, ops:()=>Unit) = {
     intOpNoPush(a, b, s, ops)
@@ -166,6 +188,7 @@ class Linearizer(e:Env) {
   }
   
   def intOpNoPush(a:Expr, b:Expr, s:Scope, ops:()=>Unit) = {
+    println("intOpNoPush a: " + a + " b: " + b + " s: " + s)
     wExpr(a, s)
     wExpr(b, s)
     wPopIntB
@@ -174,11 +197,13 @@ class Linearizer(e:Env) {
   }
   
   def byteOp(a:Expr, b:Expr, s:Scope, ops:()=>Unit) = {
+    println("  byteOp: a: " + a + " b: " + b + " s: " + s)
     byteOpNoPush(a, b, s, ops)
     wPushByte
   }
   
   def byteOpNoPush(a:Expr, b:Expr, s:Scope, ops:()=>Unit) = {
+    println("byteOpNoPush: a: " + a + " b: " + b + " s: " + s)
     wExpr(a, s)
     wExpr(b, s)
     wPopByteB
@@ -187,14 +212,14 @@ class Linearizer(e:Env) {
   }
   
   def wPopIntA = { w(DEC_SP_INT); w(I_LOAD_SP_A) }
-  def wPopIntB = { w(DEC_SP_INT); w(I_LOAD_SP_A) }
+  def wPopIntB = { w(DEC_SP_INT); w(I_LOAD_SP_B) }
   def wPushInt = { w(I_STORE_A_SP); w(INC_SP_INT) }
   
   def wPopByteA = { w(DEC_SP); w(B_LOAD_SP_A) }
   def wPopByteB = { w(DEC_SP); w(B_LOAD_SP_B) }
   def wPushByte() = { w(B_STORE_A_SP); w(INC_SP) }
   
-  def w(oc:Opcodes):Unit = out += oc.toByte
+  def w(oc:Opcodes):Unit = { println("  " + oc); out += oc.toByte }
   def w(oc:Opcodes, arg:Int):Unit = { w(oc); wInt(arg) }
   def w(oc:Opcodes, arg:Float):Unit = { w(oc); wInt(java.lang.Float.floatToIntBits(arg)) }
   def w(oc:Opcodes, arg:Byte):Unit = { w(oc); out += arg }
@@ -204,6 +229,13 @@ class Linearizer(e:Env) {
     out += (0xff & (i >> 16)).asInstanceOf[Byte]
     out += (0xff & (i >> 8)).asInstanceOf[Byte]
     out += (0xff & i).asInstanceOf[Byte]
+  }
+  
+  def overWriteInt(addr:Int, i:Int) = {
+    out(addr  ) = (0xff & (i >> 24)).asInstanceOf[Byte]
+    out(addr+1) = (0xff & (i >> 16)).asInstanceOf[Byte]
+    out(addr+2) = (0xff & (i >> 8)).asInstanceOf[Byte]
+    out(addr+3) = (0xff & i).asInstanceOf[Byte]
   }
   
 }

@@ -41,6 +41,7 @@ object Main extends OptParser {
                 env = env.addDef(Def("res" + resCounter, Nil, TypeCheck.inferType(e, env), e))
                 env = env.addDef(Def("main", Nil, TypeExpr("Null", Nil),
                                       Call("printInt",List(Call("res" + resCounter, Nil)))))
+                print("res" + resCounter + ": ")                      
                 resCounter += 1
                 val code = Linearize(TypeCheck(env))
                 new VM(code, 1024, 1024, false).run
