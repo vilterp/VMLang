@@ -18,3 +18,7 @@ Parser
 Simplifier
 
   - turns definition of fac into IfExpr(Call(==,List(Call(n,List()), IntLit(1))),Call(==,List(Call(n,List()), IntLit(1))),Call(==,List(Call(n,List()), IntLit(1))))
+
+Callgraph
+
+  - calls TypeCheck.apply(List[Def]), which doesn't exist. Don't know why Scala compiler didn't catch this.

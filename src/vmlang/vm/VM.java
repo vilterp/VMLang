@@ -42,8 +42,9 @@ public class VM {
 		debug = d;
 	}
 	
-	public void run() throws VMError {
+	public long run() throws VMError {
 		int nextAddr;
+		long cycles = 0;
 		while(true) {
 			Opcodes opcode;
 			try {
@@ -51,6 +52,7 @@ public class VM {
 			} catch(ArrayIndexOutOfBoundsException e) {
 				throw getMalfProgEx();
 			}
+			cycles++;
 			if(debug)
 				System.out.print(opcode);
 			switch(opcode) {
@@ -59,7 +61,7 @@ public class VM {
 
 				// basic
 				case STOP:
-					return;
+					return cycles;
 				case GOTO:
 					counter = progReadInt();
 					break;

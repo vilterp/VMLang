@@ -1,2 +1,0 @@
-main:Null = printInt(a)
-a:Int = 2

@@ -16,8 +16,18 @@ object Main extends OptParser {
   
   def run(args:List[String], flags:List[String], opts:Map[String,String]):Unit =
       try {
-        val callTuples = extractCalls(TypeCheck(Parse(loadFile(args.head))).defs) flatMap {
-                        case (n, cs) => cs map { c => (n, c) } }
+        val callTuples = extractCalls(
+                            TypeCheck(
+                              MakeEnv(
+                                Parse(
+                                  loadFile(
+                                    args.head
+                                  )
+                                ),
+                                TypeCheck.rootFuncTypes,
+                                TypeCheck.typeTree
+                              )
+                            ).defs) flatMap { case (n, cs) => cs map { c => (n, c) } }
         callTuples foreach { case (caller, callee) => println(caller + "\t" + callee) }
       } catch {
         case e:CompilerError => println(e.repr)
