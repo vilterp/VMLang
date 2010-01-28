@@ -1,34 +1,59 @@
-package vmlang.compiler.ast
+package parse
 
-import vmlang.compiler.typecheck.Type
+import util.parsing.input.Position
 
-abstract class ASTNode
-
-case class Prog(defs:Map[String, Def]) extends ASTNode
-case class ParamSpec(name:String, argType:TypeExpr) extends ASTNode
-case class TypeExpr(name:String, args:List[TypeExpr]) extends ASTNode {
-  val isFunctionType = (name startsWith "Function") && !(name endsWith("Function"))
-  override val toString = if(isFunctionType)
-                            args.init.mkString("(",",",")") + " => " + args.last
-                          else
-                            name + (if(args.isEmpty) "" else args.mkString("[",",","]"))
-  val repr = if(isFunctionType) toString else name
+abstract class ASTNode {
+  def pos:Position
 }
-
-abstract class REPLStmt extends ASTNode
-
-case class Def(name:String, params:List[ParamSpec], returnType:TypeExpr, body:Expr) extends REPLStmt {
-  val typeExpr = TypeExpr("Function" + params.length, (params map { _.argType }) ::: List(returnType))
-}
-
-abstract class Expr extends REPLStmt
-
-case class IfExpr(condition:Expr, ifExpr:Expr, thenExpr:Expr) extends Expr
-case class Call(name:String, args:List[Expr]) extends Expr
-case class TypedCall(call:Call, types:List[Type])
-
-abstract class Atom extends Expr
-
-case class IntLit(value:Int) extends Atom
-case class FloatLit(value:Float) extends Atom
-case class CharLit(value:Char) extends Atom
+  case class ModuleDef(name:QIdent, exports:List[Ident], imports:List[Import], defs:List[Def]) extends ASTNode {
+    def pos = name.pos
+  }
+  case class Import(ident:QIdent, all:Boolean) extends ASTNode {
+    def pos = ident.pos
+  }
+  abstract class Def extends ASTNode
+    abstract class FunctionDef extends Def
+      case class FuncDef(name:Ident, paramSpecs:List[ParamSpec], returnType:TypeExpr, body:Expr) extends FunctionDef {
+        def pos = name.pos
+      }
+      case class AbsMethodDef(name:Ident, paramTypeSpecs:List[TypeExpr], returnType:TypeExpr) extends FunctionDef {
+        def pos = name.pos
+      }
+    abstract class TypeDef extends Def {
+      val name:Ident
+      val parent:QIdent
+      val methodDefs:List[FunctionDef]
+    }
+      case class ClassDef(name:Ident, paramSpecs:List[ParamSpec], parent:QIdent, methodDefs:List[FuncDef]) extends TypeDef {
+        def pos = name.pos
+      }
+      case class InterfaceDef(name:Ident, parent:QIdent, methodDefs:List[FunctionDef]) extends TypeDef {
+        def pos = name.pos
+      }
+  abstract class Expr extends ASTNode
+    case class Block(exprs:List[Expr], pos:Position) extends Expr
+    case class LetExpr(bindings:List[(Ident,Expr)], body:Expr, pos:Position) extends Expr
+    abstract class Literal extends Expr
+      case class IntLit(i:Int, pos:Position) extends Literal
+      case class FloatLit(f:Float, pos:Position) extends Literal
+      case class CharLit(c:Char, pos:Position) extends Literal
+    abstract class Call extends Expr
+      case class MethodCall(receiver:Expr, name:Ident, args:List[Expr]) extends Call {
+        def pos = name.pos
+      }
+      case class FunctionCall(name:QIdent, args:List[Expr]) extends Call {
+        def pos = name.pos
+      }
+  case class TypeExpr(name:QIdent) extends ASTNode {
+    def pos = name.pos
+  }
+  case class ParamSpec(name:Ident, t:TypeExpr) extends ASTNode {
+    def pos = name.pos
+  }
+  case class QIdent(path:List[Ident]) extends ASTNode {
+    override def toString = path mkString "."
+    def pos = path.head.pos
+  }
+  case class Ident(name:String, pos:Position) extends ASTNode {
+    override def toString = name
+  }
