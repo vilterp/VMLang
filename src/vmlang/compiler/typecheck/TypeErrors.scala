@@ -1,3 +1,4 @@
+/*
 package vmlang.compiler.typecheck
 
 import vmlang.compiler.ast.TypeExpr
@@ -51,3 +52,4 @@ case class UncompilableArgTypeError(te:TypeExpr) extends TypeError {
   val repr = "Type of argument is " + te +
                "; must be a primitive type or an abstract type with all reference types as subtypes"
 }
+*/

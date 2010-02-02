@@ -1,11 +1,11 @@
-package parse
+package vmlang.compiler.parse
 
+import vmlang.compiler.ast._
 import util.parsing._
 import combinator.Parsers
 import input.Position
 
 // TODO: enable defining operators (which will be lexed as Keywords, not Identifiers)
-// TODO: make "module ..." optional, "Main" default
 
 case class ParseError(msg:String, pos:Position) extends Exception
 
@@ -15,34 +15,48 @@ object Parse extends Parsers with VMLangTokens {
   
   val l = new Lex
   
+  type Elem = VMLangToken
+  
   def apply(s:String) =
-      phrase(module)(new l.Scanner(s).asInstanceOf[Input]) match {
-        case Success(t, _) => t
-        case e:NoSuccess => throw ParserError(e.msg, e.next.first.pos)
+      onRule(module, s)
+  
+  def onRule[A <: ASTNode](rule:Parser[A], input:String):Either[ParseError,A] =
+      phrase(rule)(new l.Scanner(input).asInstanceOf[Input]) match {
+        case Success(n, _) => Right(n)
+        case e:NoSuccess   => Left(ParseError(e.msg, e.next.first.pos))
       }
   
   // rules
   
-  type Elem = VMLangToken
+  def module = namedModule | unnamedModule
   
-  def module = ("module" ~> qident) ~ opt(exportSpec) ~ opt(importSpec) ~ ("where" ~> rep(someDef)) ^^ { case n ~ es ~ is ~ ds => {
-    val exports = es match {
-      case Some(exs) => exs
-      case None      => Nil
-    }
-    val imports = is match {
-      case Some(imps) => imps
-      case None => Nil
-    }
-    ModuleDef(n, exports, imports, ds)
-  } }
+  def namedModule = ("module" ~> qident) ~ opt(exportSpec) ~ opt(importSpec) ~ ("where" ~> rep(someDef)) ^^ { case n ~ es ~ is ~ ds => {
+     val exports = es match {
+       case Some(exs) => exs
+       case None      => ExportList(Nil)
+     }
+     val imports = is match {
+       case Some(imps) => imps
+       case None => Nil
+     }
+     ModuleDef(n, exports, imports, ds)
+   } }
   
-  def exportSpec = "(" ~> rep1sep(ident, ",") <~ ")"
+  def unnamedModule =  opt(importSpec) ~ rep(someDef) ^^ { case Some(is) ~ ds => ModuleDef(defaultModuleName, ExportList(Nil), is, ds)
+                                                           case None     ~ ds => ModuleDef(defaultModuleName, ExportList(Nil), Nil, ds) }
   
-  def importSpec = "(" ~> rep1sep(imp, ",") <~ ")"
+  def defaultModuleName = QIdent(List(Ident("Main",CompilerPosition)))
   
-  def imp = qident ~ opt("." ~ "*") ^^ { case id ~ Some(all) => Import(id, true)
-                                         case id ~ None      => Import(id, false) }
+  def exportSpec = "export" ~> ( exportList | exportAll )
+  
+  def exportList = "(" ~> rep1sep(ident, ",") <~ ")" ^^ { es => ExportList(es) }
+  
+  def exportAll = "*" ^^ { tok => ExportAll(tok.pos) }
+  
+  def importSpec = ("import" ~ "(") ~> (rep1sep(imp, ",") <~ ")")
+  
+  def imp = qident ~ opt("." ~ "*") ^^ { case id ~ Some(all) => ImportAll(id)
+                                         case id ~ None      => ImportMember(id) }
   
   def someDef = interfaceDef | classDef | funcDef
   
@@ -87,8 +101,8 @@ object Parse extends Parsers with VMLangTokens {
   
   def classBody = "{" ~> rep(funcDef) <~ "}"
   
-  def funcDef = ((ident ~ opt(paramSpecs) ~ typeSpec) <~ "=") ~ expr ^^ { case n ~ Some(ps) ~ rt ~ b => FuncDef(n, ps,  rt, b)
-                                                                          case n ~ None     ~ rt ~ b => FuncDef(n, Nil, rt, b) }
+  def funcDef = ((ident ~ opt(paramSpecs) ~ typeSpec) <~ "=") ~ expr ^^ { case n ~ Some(ps) ~ rt ~ b => FunctionDef(n, ps,  rt, b)
+                                                                          case n ~ None     ~ rt ~ b => FunctionDef(n, Nil, rt, b) }
   
   def paramSpecs = "(" ~> repsep(paramSpec, ",") <~ ")"
   
@@ -124,19 +138,25 @@ object Parse extends Parsers with VMLangTokens {
   def multResult:Parser[Expr] = atom ~ opt(("+" | "-") ~ multResult) ^^ { case l ~ Some(op ~ r) => MethodCall(l, Ident(op.chars, op.pos), List(r))
                                                                           case l ~ None => l }
   
-  def atom = parenExpr | int | char | call
+  def atom = parenExpr | int | float | char | call
   
   def parenExpr = "(" ~> expr <~ ")"
   
-  def int = elem("integer literal", _.isInstanceOf[IntLiteral]) ^^ { tok =>
-    val bi = BigInt(tok.chars)
+  def int = opt("-") ~ elem("integer literal", _.isInstanceOf[IntLiteral]) ^^ { case minus ~ lit =>
+    val bi = minus match {
+      case Some(t) => BigInt(t.chars + lit.chars)
+      case None    => BigInt(lit.chars)
+    }
     if(bi > Math.MAX_INT)
-      throw ParserError("integer literal too big", tok.pos)
+      throw ParseError("integer literal too big", lit.pos)
     else if(bi < Math.MIN_INT)
-      throw ParserError("integer literal too small", tok.pos)
+      throw ParseError("integer literal too small", lit.pos)
     else
-      IntLit(bi.intValue, tok.pos)
+      IntLit(bi.intValue, lit.pos)
   }
+  
+  def float = opt("-") ~ elem("float literal", _.isInstanceOf[FloatLiteral]) ^^ { case Some(minus) ~ lit => FloatLit((minus.chars + lit.chars).toFloat, minus.pos)
+                                                                                  case None        ~ lit => FloatLit(lit.chars.toFloat, lit.pos) }
   
   def char = elem("character literal", _.isInstanceOf[CharLiteral]) ^^ { tok =>
     CharLit(tok.chars charAt 0, tok.pos)

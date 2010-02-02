@@ -1,3 +1,4 @@
+/*
 package vmlang.compiler
 
 import collection.mutable.ArrayBuffer
@@ -5,7 +6,7 @@ import collection.mutable.HashMap
 
 import vmlang.common.Opcodes
 import vmlang.common.Opcodes._
-import vmlang.compiler.ast._
+import ast._
 
 // shameful imperative code...
 
@@ -240,3 +241,4 @@ class Linearizer(e:Env) {
   }
   
 }
+*/

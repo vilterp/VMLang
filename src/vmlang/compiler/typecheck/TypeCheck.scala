@@ -1,6 +1,7 @@
+/*
 package vmlang.compiler.typecheck
 
-import vmlang.compiler.ast._
+import ast._
 import collection.immutable.{ Map, HashMap }
 
 object TypeCheck {
@@ -132,3 +133,5 @@ object TypeCheck {
       call.args.isEmpty && (scope isDefinedAt call.name)
   
 }
+
+*/

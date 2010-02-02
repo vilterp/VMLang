@@ -1,9 +1,8 @@
-package parse
+package vmlang.compiler.parse
 
-import util.parsing.syntax.Tokens
 import util.parsing.input.Positional
 
-trait VMLangTokens extends Tokens {
+trait VMLangTokens extends util.parsing.syntax.Tokens {
   
   abstract class VMLangToken extends Token with Positional {
     var filePath:String = null

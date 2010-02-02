@@ -62,7 +62,7 @@ abstract class OptParser {
     (args, flags map { _ substring 1 }, opts)
   }
   
-  def loadFileBytes(fileName:String):Array[Byte] = {
+  def readFileBytes(fileName:String):Array[Byte] = {
     try {
       val in = new FileInputStream(new File(fileName))
       val result = new Array[Byte](in.available)
@@ -87,7 +87,7 @@ abstract class OptParser {
   def writeFile(output:List[Byte], fileName:String):Unit =
       writeFile(output.toArray, fileName)
   
-  def loadFile(fileName:String):String =
+  def readFile(fileName:String):String =
       try {
         Source.fromFile(fileName).getLines.mkString
       } catch {

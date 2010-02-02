@@ -1,0 +1,16 @@
+module Test.Data
+export *
+where
+
+interface Foo {
+  bar:Int
+  baz:Char
+}
+
+class A(baz:Char) < Foo {
+  bar:Int = 2
+}
+
+class B(bar:Int) < Foo {
+  baz:Char = 'c'
+}

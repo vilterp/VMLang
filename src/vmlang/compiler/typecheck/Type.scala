@@ -1,3 +1,4 @@
+/*
 package vmlang.compiler.typecheck
 
 abstract class Type {
@@ -15,7 +16,7 @@ case class RefType(name:String, numParams:Int) extends ConcreteType {
 case class PrimType(name:String, size:Int) extends ConcreteType {
   val numParams = 0
 }
-
+*/
 /*
 
 Type

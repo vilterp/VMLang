@@ -1,4 +1,4 @@
-package parse
+package vmlang.compiler.parse
 
 import util.parsing._
 import input._
@@ -10,8 +10,7 @@ class Lex extends Lexical with VMLangTokens {
 
   type Token = VMLangToken
   
-  val keywords = Set("module","import","export","where","let",
-                        "if","else","then","class","interface","this")
+  val keywords = Set("module","import","export","where","let","if","else","then","class","interface","this","true","false","null")
   
   def token =
     positioned(

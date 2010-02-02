@@ -1,3 +1,4 @@
+/*
 package vmlang.compiler.typecheck
 
 import vmlang.compiler.ast.TypeExpr
@@ -120,3 +121,5 @@ case class TypeTree(t:Type, subTypes:List[TypeTree]) {
                                 subTypes flatMap { _ prettyPrint (indent + 2) })
   
 }
+
+*/
